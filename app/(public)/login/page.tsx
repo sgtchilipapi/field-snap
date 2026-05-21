@@ -1,6 +1,50 @@
+import { redirect } from "next/navigation";
+import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import { InlineAlert } from "@/components/ui/inline-alert";
+import { getSession } from "@/lib/server/auth/session";
+import { getPostLoginRedirectForUser } from "@/lib/server/services/auth-service";
 
-export default function LoginPage() {
+const alertByError = {
+  access_denied: {
+    title: "Access denied",
+    description: "Google sign-in was cancelled or Field-Snap did not receive approved access.",
+    variant: "danger" as const
+  },
+  email_not_verified: {
+    title: "Access denied",
+    description: "Field-Snap requires a verified Google email address before sign-in can continue.",
+    variant: "danger" as const
+  },
+  callback_failed: {
+    title: "Callback failed",
+    description: "Field-Snap could not complete the Google callback. Check OAuth configuration and try again.",
+    variant: "danger" as const
+  },
+  unexpected: {
+    title: "Unexpected sign-in error",
+    description: "An unexpected provider error interrupted sign-in. Try again after confirming the OAuth setup.",
+    variant: "danger" as const
+  }
+};
+
+export default async function LoginPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const session = await getSession();
+
+  if (session) {
+    redirect(await getPostLoginRedirectForUser(session.userId));
+  }
+
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const errorParam = resolvedSearchParams.error;
+  const errorCode = Array.isArray(errorParam) ? errorParam[0] : errorParam;
+  const alert = errorCode ? alertByError[errorCode as keyof typeof alertByError] : null;
+  const loggedOutParam = resolvedSearchParams.logged_out;
+  const wasLoggedOut = Array.isArray(loggedOutParam) ? loggedOutParam[0] === "1" : loggedOutParam === "1";
+
   return (
     <>
       <section className="flex flex-col justify-center">
@@ -19,27 +63,34 @@ export default function LoginPage() {
         <p className="text-sm uppercase tracking-[0.24em] text-[color:var(--muted)]">
           Authentication
         </p>
-        <h2 className="mt-3 text-2xl font-semibold">Google sign-in arrives in WO-02</h2>
+        <h2 className="mt-3 text-2xl font-semibold">Sign in with Google</h2>
         <p className="mt-4 text-[color:var(--muted)]">
-          This scaffold already protects authenticated routes. The actual OAuth flow is the next
-          work order.
+          Field-Snap uses Google identity for team access, invitation matching, and protected
+          business workflows.
         </p>
         <div className="mt-8 space-y-4">
-          <button
-            className="inline-flex w-full items-center justify-center rounded-full bg-[color:var(--foreground)] px-5 py-3 font-semibold text-white opacity-60"
-            disabled
-            type="button"
-          >
-            Continue with Google
-          </button>
+          <GoogleLoginButton />
+          {alert ? (
+            <InlineAlert
+              title={alert.title}
+              variant={alert.variant}
+              description={alert.description}
+            />
+          ) : null}
+          {wasLoggedOut ? (
+            <InlineAlert
+              title="Signed out"
+              variant="success"
+              description="Your Field-Snap session has been cleared."
+            />
+          ) : null}
           <InlineAlert
             title="Protected routes are live"
             variant="info"
-            description="Visit /app while signed out and the base auth guard will redirect back here."
+            description="Visit /app while signed out and Field-Snap will redirect back here."
           />
         </div>
       </section>
     </>
   );
 }
-

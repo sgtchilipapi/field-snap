@@ -184,6 +184,10 @@ Acceptance
 
 ## WO-02 — Google login
 
+Status
+
+`done`
+
 Goal
 
 Implement Google authentication, persistent user records, and a stable session model.
