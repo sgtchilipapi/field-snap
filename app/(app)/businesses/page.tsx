@@ -1,42 +1,63 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
 import { requireSession } from "@/lib/server/auth/session";
-import { getUserWithMemberships } from "@/lib/server/data/users";
+import Link from "next/link";
+import {
+  getBusinessLandingPath,
+  listBusinessesForUser
+} from "@/lib/server/services/business-service";
 
 export default async function BusinessesPage() {
   const session = await requireSession();
-  const details = await getUserWithMemberships(session.userId);
+  const businesses = await listBusinessesForUser(session.userId);
 
-  if (!details || details.memberships.length === 0) {
+  if (businesses.length === 0) {
     redirect("/businesses/new");
+  }
+
+  if (businesses.length === 1) {
+    redirect(getBusinessLandingPath(businesses[0]));
   }
 
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Business access"
-        title="Field-Snap knows your memberships"
-        description="Business selection and routing become the focus of WO-03. Your current memberships are already available through the authenticated data layer."
+        eyebrow="Businesses"
+        title="Choose a business"
+        description="Field-Snap keeps business context in the URL so switching businesses changes the route instead of relying on a hidden session flag."
       />
       <div className="grid gap-4">
-        {details.memberships.map((membership) => (
+        {businesses.map((business) => (
           <div
             className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-6"
-            key={membership.businessId}
+            key={business.id}
           >
-            <h2 className="text-xl font-semibold">{membership.businessName}</h2>
-            <p className="mt-2 text-sm text-[color:var(--muted)]">
-              Role: {membership.role} | Status: {membership.status}
-            </p>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">{business.name}</h2>
+                <p className="mt-2 text-sm text-[color:var(--muted)]">
+                  Role: {business.role} | Status: {business.status}
+                </p>
+                <p className="mt-1 text-sm text-[color:var(--muted)]">
+                  Drive: {business.driveConnected ? "Connected" : "Not connected"}
+                </p>
+              </div>
+              <Link
+                className="rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
+                href={getBusinessLandingPath(business)}
+              >
+                Open business
+              </Link>
+            </div>
           </div>
         ))}
       </div>
-      <EmptyState
-        title="Business-scoped navigation is next"
-        description="WO-03 will turn this membership data into the actual business picker and onboarding flow."
-      />
+      <Link
+        className="inline-flex rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
+        href="/businesses/new"
+      >
+        Create another business
+      </Link>
     </div>
   );
 }
-

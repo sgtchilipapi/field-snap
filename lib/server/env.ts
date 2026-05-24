@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+const databaseEnvSchema = z.object({
+  DATABASE_URL: z.string().url()
+});
+
 const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   APP_BASE_URL: z.string().url(),
@@ -11,7 +15,26 @@ const envSchema = z.object({
   QUEUE_PREFIX: z.string().min(1)
 });
 
+export type DatabaseEnv = z.infer<typeof databaseEnvSchema>;
 export type ServerEnv = z.infer<typeof envSchema>;
+
+function toValidationErrorMessage(
+  parsed: z.SafeParseError<Record<string, string | undefined>>
+) {
+  return parsed.error.issues
+    .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+    .join("; ");
+}
+
+export function parseDatabaseEnv(source: Record<string, string | undefined>): DatabaseEnv {
+  const parsed = databaseEnvSchema.safeParse(source);
+
+  if (parsed.success) {
+    return parsed.data;
+  }
+
+  throw new Error(`Invalid environment configuration: ${toValidationErrorMessage(parsed)}`);
+}
 
 export function parseServerEnv(source: Record<string, string | undefined>): ServerEnv {
   const parsed = envSchema.safeParse(source);
@@ -20,11 +43,8 @@ export function parseServerEnv(source: Record<string, string | undefined>): Serv
     return parsed.data;
   }
 
-  const details = parsed.error.issues
-    .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-    .join("; ");
-
-  throw new Error(`Invalid environment configuration: ${details}`);
+  throw new Error(`Invalid environment configuration: ${toValidationErrorMessage(parsed)}`);
 }
 
+export const databaseEnv = parseDatabaseEnv(process.env);
 export const env = parseServerEnv(process.env);

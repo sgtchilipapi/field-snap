@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseServerEnv } from "@/lib/server/env";
+import { parseDatabaseEnv, parseServerEnv } from "@/lib/server/env";
 
 const validEnv = {
   DATABASE_URL: "postgres://postgres:postgres@localhost:5432/field_snap",
@@ -13,6 +13,16 @@ const validEnv = {
 };
 
 describe("parseServerEnv", () => {
+  it("accepts a database-only configuration for DB-only consumers", () => {
+    expect(
+      parseDatabaseEnv({
+        DATABASE_URL: validEnv.DATABASE_URL
+      })
+    ).toEqual({
+      DATABASE_URL: validEnv.DATABASE_URL
+    });
+  });
+
   it("accepts a complete configuration", () => {
     expect(parseServerEnv(validEnv)).toMatchObject(validEnv);
   });
@@ -26,4 +36,3 @@ describe("parseServerEnv", () => {
     ).toThrow(/Invalid environment configuration/);
   });
 });
-

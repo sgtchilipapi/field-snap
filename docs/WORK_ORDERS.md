@@ -218,6 +218,10 @@ Acceptance
 
 ## WO-03 — Business creation and switcher
 
+Status
+
+`done`
+
 Goal
 
 Create the business container model and the route-driven business switcher that all later features depend on.

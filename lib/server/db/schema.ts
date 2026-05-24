@@ -12,7 +12,10 @@ export type BusinessRow = {
   id: string;
   name: string;
   owner_user_id: string;
+  drive_root_folder_id: string | null;
+  general_docs_folder_id: string | null;
   created_at: Date;
+  updated_at: Date;
 };
 
 export type BusinessMembershipRow = {
@@ -22,5 +25,5 @@ export type BusinessMembershipRow = {
   role: "owner_admin" | "reviewer" | "field_user";
   status: "active" | "disabled";
   created_at: Date;
+  updated_at: Date;
 };
-

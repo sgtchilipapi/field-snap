@@ -1,5 +1,5 @@
 import postgres from "postgres";
-import { env } from "@/lib/server/env";
+import { databaseEnv } from "@/lib/server/env";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -7,7 +7,7 @@ declare global {
 }
 
 export const db = globalThis.__fieldSnapSqlClient ??
-  postgres(env.DATABASE_URL, {
+  postgres(databaseEnv.DATABASE_URL, {
     max: 1,
     prepare: false
   });
