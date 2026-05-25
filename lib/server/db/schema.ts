@@ -60,3 +60,29 @@ export type GeneralFolderRow = {
   drive_folder_id: string;
   created_at: Date;
 };
+
+export type JobRow = {
+  id: string;
+  business_id: string;
+  category_id: string;
+  client_name: string;
+  job_name: string;
+  address: string | null;
+  job_date: string;
+  drive_folder_id: string;
+  in_process_folder_id: string;
+  needs_review_folder_id: string;
+  status: "active" | "archived";
+  created_by_user_id: string;
+  created_at: Date;
+  updated_at: Date;
+};
+
+export type JobFolderRow = {
+  id: string;
+  job_id: string;
+  folder_key: string;
+  folder_name: string;
+  drive_folder_id: string;
+  created_at: Date;
+};

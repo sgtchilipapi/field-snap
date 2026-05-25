@@ -1,5 +1,18 @@
 export const GENERAL_BUSINESS_DOCS_FOLDER_NAME = "General Business Docs";
 
+export const JOB_FOLDER_TEMPLATES = [
+  { key: "in_process", name: "00 In-Process" },
+  { key: "receipts", name: "01 Receipts" },
+  { key: "vendor_bills", name: "02 Vendor Bills" },
+  { key: "customer_invoices", name: "03 Customer Invoices" },
+  { key: "job_photos", name: "04 Job Photos" },
+  { key: "contracts", name: "05 Contracts" },
+  { key: "permits", name: "06 Permits" },
+  { key: "change_orders", name: "07 Change Orders" },
+  { key: "equipment", name: "08 Equipment" },
+  { key: "needs_review", name: "99 Needs Review" }
+] as const;
+
 export const DEFAULT_CATEGORIES = [
   { name: "Landscaping", slug: "landscaping" },
   { name: "HVAC", slug: "hvac" },

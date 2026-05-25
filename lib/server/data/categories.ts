@@ -33,6 +33,66 @@ export async function getCategoriesForBusiness(businessId: string) {
   return rows.map(mapCategory);
 }
 
+export async function getCategoryForBusiness(businessId: string, categoryId: string) {
+  const rows = await db<CategoryRow[]>`
+    select
+      id,
+      business_id,
+      name,
+      slug,
+      is_default,
+      drive_folder_id,
+      created_at,
+      updated_at
+    from categories
+    where business_id = ${businessId}
+      and id = ${categoryId}
+    limit 1
+  `;
+
+  return rows[0] ? mapCategory(rows[0]) : null;
+}
+
+export async function findCategoryForBusinessByName(businessId: string, name: string) {
+  const rows = await db<CategoryRow[]>`
+    select
+      id,
+      business_id,
+      name,
+      slug,
+      is_default,
+      drive_folder_id,
+      created_at,
+      updated_at
+    from categories
+    where business_id = ${businessId}
+      and lower(name) = lower(${name})
+    limit 1
+  `;
+
+  return rows[0] ? mapCategory(rows[0]) : null;
+}
+
+export async function findCategoryForBusinessBySlug(businessId: string, slug: string) {
+  const rows = await db<CategoryRow[]>`
+    select
+      id,
+      business_id,
+      name,
+      slug,
+      is_default,
+      drive_folder_id,
+      created_at,
+      updated_at
+    from categories
+    where business_id = ${businessId}
+      and slug = ${slug}
+    limit 1
+  `;
+
+  return rows[0] ? mapCategory(rows[0]) : null;
+}
+
 export async function upsertCategory(input: {
   businessId: string;
   name: string;

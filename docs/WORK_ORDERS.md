@@ -322,6 +322,10 @@ Acceptance
 
 ## WO-06 — Job creation
 
+Status
+
+`done`
+
 Goal
 
 Create jobs with predictable metadata, Drive folder structure, and stored subfolder ids.
