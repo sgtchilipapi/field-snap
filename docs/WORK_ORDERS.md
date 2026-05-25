@@ -288,6 +288,10 @@ Acceptance
 
 ## WO-05 — Default folder template creation
 
+Status
+
+`done`
+
 Goal
 
 Create the default category folders, general business folders, and persisted folder map that the rest of the product relies on.

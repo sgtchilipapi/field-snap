@@ -8,6 +8,7 @@ import {
 import { env } from "@/lib/server/env";
 import { logError } from "@/lib/server/logger";
 import { connectBusinessDriveFromCode } from "@/lib/server/services/drive-service";
+import { ensureBusinessFolderTemplate } from "@/lib/server/services/folder-template-service";
 
 function redirectAfterDriveCallback(businessId: string | null | undefined, errorCode?: string) {
   const pathname = businessId ? `/businesses/${businessId}/settings` : "/businesses";
@@ -67,6 +68,8 @@ export async function GET(request: NextRequest) {
     if (!result) {
       return redirectAfterDriveCallback(businessId, "forbidden");
     }
+
+    await ensureBusinessFolderTemplate(businessId);
 
     return redirectAfterDriveCallback(businessId);
   } catch (caughtError) {

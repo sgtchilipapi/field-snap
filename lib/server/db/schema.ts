@@ -40,3 +40,23 @@ export type DriveConnectionRow = {
   created_at: Date;
   updated_at: Date;
 };
+
+export type CategoryRow = {
+  id: string;
+  business_id: string;
+  name: string;
+  slug: string;
+  is_default: boolean;
+  drive_folder_id: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
+
+export type GeneralFolderRow = {
+  id: string;
+  business_id: string;
+  folder_key: string;
+  folder_name: string;
+  drive_folder_id: string;
+  created_at: Date;
+};

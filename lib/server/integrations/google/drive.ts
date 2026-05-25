@@ -144,6 +144,14 @@ export async function getGoogleDriveFolder(accessToken: string, folderId: string
 }
 
 export async function createGoogleDriveFolder(accessToken: string, name: string) {
+  return createGoogleDriveFolderInParent(accessToken, name);
+}
+
+export async function createGoogleDriveFolderInParent(
+  accessToken: string,
+  name: string,
+  parentFolderId?: string
+) {
   const response = await fetch(`${GOOGLE_DRIVE_FILES_URL}?fields=id,name`, {
     method: "POST",
     headers: {
@@ -152,7 +160,8 @@ export async function createGoogleDriveFolder(accessToken: string, name: string)
     },
     body: JSON.stringify({
       name,
-      mimeType: "application/vnd.google-apps.folder"
+      mimeType: "application/vnd.google-apps.folder",
+      parents: parentFolderId ? [parentFolderId] : undefined
     })
   });
 
@@ -168,5 +177,52 @@ export async function createGoogleDriveFolder(accessToken: string, name: string)
   return {
     id: payload.id,
     name: payload.name
+  } satisfies GoogleDriveFile;
+}
+
+function escapeDriveQueryValue(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+export async function findGoogleDriveFolderByName(
+  accessToken: string,
+  parentFolderId: string,
+  name: string
+) {
+  const query = [
+    "mimeType = 'application/vnd.google-apps.folder'",
+    `name = '${escapeDriveQueryValue(name)}'`,
+    `'${escapeDriveQueryValue(parentFolderId)}' in parents`,
+    "trashed = false"
+  ].join(" and ");
+  const url = new URL(GOOGLE_DRIVE_FILES_URL);
+
+  url.searchParams.set("q", query);
+  url.searchParams.set("fields", "files(id,name)");
+  url.searchParams.set("pageSize", "1");
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new AuthFlowError(
+      "callback_failed",
+      `Google Drive folder search failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const payload = await parseJson<{ files?: GoogleDriveFileResponse[] }>(response);
+  const match = payload.files?.[0];
+
+  if (!match?.id || !match.name) {
+    return null;
+  }
+
+  return {
+    id: match.id,
+    name: match.name
   } satisfies GoogleDriveFile;
 }

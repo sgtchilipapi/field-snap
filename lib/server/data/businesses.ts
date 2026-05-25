@@ -149,3 +149,44 @@ export async function updateBusinessDriveRootFolder(businessId: string, driveRoo
 
   return rows[0] ? mapBusiness(rows[0]) : null;
 }
+
+export async function updateBusinessGeneralDocsFolder(
+  businessId: string,
+  generalDocsFolderId: string
+) {
+  const rows = await db<BusinessRow[]>`
+    update businesses
+    set
+      general_docs_folder_id = ${generalDocsFolderId},
+      updated_at = now()
+    where id = ${businessId}
+    returning
+      id,
+      name,
+      owner_user_id,
+      drive_root_folder_id,
+      general_docs_folder_id,
+      created_at,
+      updated_at
+  `;
+
+  return rows[0] ? mapBusiness(rows[0]) : null;
+}
+
+export async function getBusinessById(businessId: string) {
+  const rows = await db<BusinessRow[]>`
+    select
+      id,
+      name,
+      owner_user_id,
+      drive_root_folder_id,
+      general_docs_folder_id,
+      created_at,
+      updated_at
+    from businesses
+    where id = ${businessId}
+    limit 1
+  `;
+
+  return rows[0] ? mapBusiness(rows[0]) : null;
+}

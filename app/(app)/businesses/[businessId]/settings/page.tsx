@@ -11,11 +11,16 @@ export default async function BusinessSettingsPage({
   searchParams
 }: {
   params: Promise<{ businessId: string }>;
-  searchParams: Promise<{ drive?: string; drive_error?: string }>;
+  searchParams: Promise<{
+    drive?: string;
+    drive_error?: string;
+    folders?: string;
+    folders_error?: string;
+  }>;
 }) {
   const session = await requireSession();
   const { businessId } = await params;
-  const [{ drive, drive_error: driveError }, details, driveStatus] = await Promise.all([
+  const [{ drive, drive_error: driveError, folders, folders_error: foldersError }, details, driveStatus] = await Promise.all([
     searchParams,
     getBusinessDetailsForUser(businessId, session.userId),
     getBusinessDriveStatusForUser(businessId, session.userId)
@@ -54,13 +59,22 @@ export default async function BusinessSettingsPage({
         title={details.business.name}
         description="Connect the owner's Google Drive for this business and confirm the root folder Field-Snap will manage."
       />
-      <InlineAlert
-        title={driveAlert.title}
-        description={driveAlert.description}
-        variant={driveAlert.variant}
-      />
+      <InlineAlert title={driveAlert.title} description={driveAlert.description} variant={driveAlert.variant} />
+      {foldersError ? (
+        <InlineAlert
+          title="Folder repair failed"
+          description="Field-Snap could not recreate the required default Drive folders for this business."
+          variant="danger"
+        />
+      ) : folders === "repaired" ? (
+        <InlineAlert
+          title="Folders repaired"
+          description="Field-Snap verified the default category and general document folders for this business."
+          variant="success"
+        />
+      ) : null}
       {isOwner ? (
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
+        <div className="space-y-4 rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-lg font-semibold">Google Drive connection</h2>
@@ -79,6 +93,24 @@ export default async function BusinessSettingsPage({
               </button>
             </form>
           </div>
+          {driveConnected ? (
+            <div className="flex flex-col gap-3 border-t border-[color:var(--border)] pt-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 className="text-base font-semibold">Default folder template</h3>
+                <p className="mt-2 text-sm text-[color:var(--muted)]">
+                  Recreate missing category or general document folders if they were changed or deleted in Google Drive.
+                </p>
+              </div>
+              <form action={`/api/businesses/${businessId}/drive/repair`} method="post">
+                <button
+                  className="rounded-full border border-[color:var(--border)] bg-white px-5 py-3 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
+                  type="submit"
+                >
+                  Repair Drive folders
+                </button>
+              </form>
+            </div>
+          ) : null}
         </div>
       ) : null}
       <dl className="grid gap-4 md:grid-cols-2">

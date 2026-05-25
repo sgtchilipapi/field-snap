@@ -11,6 +11,10 @@ vi.mock("@/lib/server/services/drive-service", () => ({
   connectBusinessDriveFromCode: vi.fn()
 }));
 
+vi.mock("@/lib/server/services/folder-template-service", () => ({
+  ensureBusinessFolderTemplate: vi.fn()
+}));
+
 vi.mock("@/lib/server/logger", () => ({
   logError: vi.fn()
 }));
@@ -22,11 +26,13 @@ import {
   getSession
 } from "@/lib/server/auth/session";
 import { connectBusinessDriveFromCode } from "@/lib/server/services/drive-service";
+import { ensureBusinessFolderTemplate } from "@/lib/server/services/folder-template-service";
 
 const mockedClearDriveOAuthState = vi.mocked(clearDriveOAuthState);
 const mockedGetDriveOAuthState = vi.mocked(getDriveOAuthState);
 const mockedGetSession = vi.mocked(getSession);
 const mockedConnectBusinessDriveFromCode = vi.mocked(connectBusinessDriveFromCode);
+const mockedEnsureBusinessFolderTemplate = vi.mocked(ensureBusinessFolderTemplate);
 
 describe("/auth/google/drive/callback", () => {
   beforeEach(() => {
@@ -54,6 +60,7 @@ describe("/auth/google/drive/callback", () => {
       connectedByUserId: "user-1",
       code: "abc123"
     });
+    expect(mockedEnsureBusinessFolderTemplate).toHaveBeenCalledWith("business-1");
     expect(mockedClearDriveOAuthState).toHaveBeenCalled();
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toContain("/businesses/business-1/settings?drive=connected");
