@@ -134,3 +134,15 @@ export type DocumentProcessingJobRow = {
   created_at: Date;
   updated_at: Date;
 };
+
+export type AuditLogRow = {
+  id: string;
+  business_id: string;
+  actor_user_id: string | null;
+  entity_type: string;
+  entity_id: string;
+  action: string;
+  old_value: unknown | null;
+  new_value: unknown | null;
+  created_at: Date;
+};

@@ -434,6 +434,10 @@ Acceptance
 
 ## WO-09 — Gemini provider abstraction
 
+Status
+
+`done`
+
 Goal
 
 Create a provider boundary for document classification so the rest of the app depends on one normalized result shape instead of a specific AI SDK response.
@@ -463,6 +467,10 @@ Acceptance
 3. Provider code does not leak SDK-specific response handling into route handlers or document services.
 
 ## WO-10 — AI processing and auto-filing
+
+Status
+
+`done`
 
 Goal
 

@@ -38,6 +38,10 @@ export type GoogleDriveFile = {
   name: string;
 };
 
+export type GoogleDriveFileBytes = {
+  bytes: Uint8Array;
+};
+
 export function getGoogleDriveCallbackUrl() {
   return new URL("/auth/google/drive/callback", env.APP_BASE_URL).toString();
 }
@@ -270,6 +274,95 @@ export async function uploadGoogleDriveFile(input: {
     throw new AuthFlowError(
       "callback_failed",
       `Google Drive file upload failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return {
+    id: payload.id,
+    name: payload.name
+  } satisfies GoogleDriveFile;
+}
+
+export async function getGoogleDriveFileBytes(accessToken: string, fileId: string) {
+  const response = await fetch(
+    `${GOOGLE_DRIVE_FILES_URL}/${encodeURIComponent(fileId)}?alt=media`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new AuthFlowError(
+      "callback_failed",
+      `Google Drive file download failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return {
+    bytes: new Uint8Array(await response.arrayBuffer())
+  } satisfies GoogleDriveFileBytes;
+}
+
+export async function moveGoogleDriveFile(input: {
+  accessToken: string;
+  fileId: string;
+  fromFolderId: string;
+  toFolderId: string;
+}) {
+  const response = await fetch(
+    `${GOOGLE_DRIVE_FILES_URL}/${encodeURIComponent(input.fileId)}?addParents=${encodeURIComponent(
+      input.toFolderId
+    )}&removeParents=${encodeURIComponent(input.fromFolderId)}&fields=id,name`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${input.accessToken}`
+      }
+    }
+  );
+
+  const payload = await parseJson<GoogleDriveFileResponse>(response);
+
+  if (!response.ok || !payload.id || !payload.name) {
+    throw new AuthFlowError(
+      "callback_failed",
+      `Google Drive file move failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return {
+    id: payload.id,
+    name: payload.name
+  } satisfies GoogleDriveFile;
+}
+
+export async function renameGoogleDriveFile(input: {
+  accessToken: string;
+  fileId: string;
+  filename: string;
+}) {
+  const response = await fetch(
+    `${GOOGLE_DRIVE_FILES_URL}/${encodeURIComponent(input.fileId)}?fields=id,name`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${input.accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: input.filename
+      })
+    }
+  );
+
+  const payload = await parseJson<GoogleDriveFileResponse>(response);
+
+  if (!response.ok || !payload.id || !payload.name) {
+    throw new AuthFlowError(
+      "callback_failed",
+      `Google Drive file rename failed: ${response.status} ${response.statusText}`
     );
   }
 

@@ -4,6 +4,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TUNNEL_CONTAINER_ID=""
+DEV_SERVER_PID=""
+DOCUMENT_WORKER_PID=""
 
 cd "$ROOT_DIR"
 
@@ -19,6 +21,16 @@ load_env_file() {
 }
 
 cleanup() {
+  if [[ -n "$DOCUMENT_WORKER_PID" ]]; then
+    echo "Stopping document worker..."
+    kill "$DOCUMENT_WORKER_PID" >/dev/null 2>&1 || true
+  fi
+
+  if [[ -n "$DEV_SERVER_PID" ]]; then
+    echo "Stopping Next.js dev server..."
+    kill "$DEV_SERVER_PID" >/dev/null 2>&1 || true
+  fi
+
   if [[ -n "$TUNNEL_CONTAINER_ID" ]]; then
     echo "Stopping Cloudflare tunnel..."
     docker stop "$TUNNEL_CONTAINER_ID" >/dev/null 2>&1 || true
@@ -66,5 +78,12 @@ done
 echo "Running database migrations..."
 npm run db:migrate
 
+echo "Starting document worker..."
+npm run worker:documents &
+DOCUMENT_WORKER_PID=$!
+
 echo "Starting Field-Snap..."
-npm run dev
+npm run dev &
+DEV_SERVER_PID=$!
+
+wait "$DEV_SERVER_PID" "$DOCUMENT_WORKER_PID"
