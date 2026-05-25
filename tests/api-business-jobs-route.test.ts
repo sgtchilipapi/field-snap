@@ -60,6 +60,42 @@ describe("/api/businesses/[businessId]/jobs", () => {
         }
       ]
     });
+    expect(mockedListJobsForUser).toHaveBeenCalledWith({
+      businessId: "business-1",
+      userId: "user-1",
+      status: "active",
+      categoryId: null,
+      search: null
+    });
+  });
+
+  it("passes status, category, and search filters through to the job service", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
+    mockedListJobsForUser.mockResolvedValue({
+      membership: {
+        role: "field_user",
+        status: "active"
+      },
+      jobs: []
+    } as never);
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/businesses/business-1/jobs?status=archived&category=11111111-1111-1111-8111-111111111111&search=smith"
+      ),
+      {
+        params: Promise.resolve({ businessId: "business-1" })
+      }
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockedListJobsForUser).toHaveBeenCalledWith({
+      businessId: "business-1",
+      userId: "user-1",
+      status: "archived",
+      categoryId: "11111111-1111-1111-8111-111111111111",
+      search: "smith"
+    });
   });
 
   it("rejects unauthenticated job list requests", async () => {
@@ -70,6 +106,38 @@ describe("/api/businesses/[businessId]/jobs", () => {
     });
 
     expect(response.status).toBe(401);
+  });
+
+  it("rejects invalid status filters", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
+
+    const response = await GET(
+      new Request("http://localhost/api/businesses/business-1/jobs?status=pending"),
+      {
+        params: Promise.resolve({ businessId: "business-1" })
+      }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Status must be active, archived, or all."
+    });
+  });
+
+  it("rejects invalid category filters", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
+
+    const response = await GET(
+      new Request("http://localhost/api/businesses/business-1/jobs?category=not-a-uuid"),
+      {
+        params: Promise.resolve({ businessId: "business-1" })
+      }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Category filter must be a UUID."
+    });
   });
 
   it("creates a job for an owner-admin", async () => {

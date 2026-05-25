@@ -361,6 +361,10 @@ Acceptance
 
 ## WO-07 — Job list and job detail
 
+Status
+
+`done`
+
 Goal
 
 Make jobs easy to find and open from both desktop and mobile flows.
@@ -391,6 +395,10 @@ Acceptance
 4. The UI does not imply a job-assignment system that the backend does not have.
 
 ## WO-08 — Image capture/upload
+
+Status
+
+`done`
 
 Goal
 

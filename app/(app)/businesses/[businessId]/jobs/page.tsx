@@ -13,19 +13,27 @@ export default async function BusinessJobsPage({
   searchParams
 }: {
   params: Promise<{ businessId: string }>;
-  searchParams: Promise<{ status?: "active" | "archived" | "all" }>;
+  searchParams: Promise<{
+    status?: "active" | "archived" | "all";
+    category?: string;
+    search?: string;
+  }>;
 }) {
   const session = await requireSession();
   const { businessId } = await params;
-  const { status } = await searchParams;
+  const { status, category, search } = await searchParams;
   const selectedStatus = status && ["active", "archived", "all"].includes(status) ? status : "active";
+  const selectedCategoryId = typeof category === "string" && category.trim().length > 0 ? category : "";
+  const searchQuery = typeof search === "string" ? search.trim() : "";
   const [details, categories, jobsResult] = await Promise.all([
     getBusinessDetailsForUser(businessId, session.userId),
     getCategoriesForBusiness(businessId),
     listJobsForUser({
       businessId,
       userId: session.userId,
-      status: selectedStatus
+      status: selectedStatus,
+      categoryId: selectedCategoryId || null,
+      search: searchQuery || null
     })
   ]);
 
@@ -43,18 +51,28 @@ export default async function BusinessJobsPage({
       {details.membership.role === "owner_admin" ? (
         <NewJobForm businessId={businessId} categories={categories} />
       ) : null}
+      <JobList
+        businessId={businessId}
+        categories={categories}
+        currentStatus={selectedStatus}
+        jobs={jobsResult.jobs}
+        searchQuery={searchQuery}
+        selectedCategoryId={selectedCategoryId}
+      />
       {jobsResult.jobs.length === 0 ? (
         <EmptyState
-          title={selectedStatus === "archived" ? "No archived jobs" : "No jobs yet"}
+          title={
+            searchQuery || selectedCategoryId || selectedStatus !== "active"
+              ? "No jobs match this filter"
+              : "No jobs yet"
+          }
           description={
-            selectedStatus === "archived"
-              ? "Archived jobs will stay in Drive and appear here when you filter for them."
+            searchQuery || selectedCategoryId || selectedStatus !== "active"
+              ? "Adjust the status, category, or search text to widen the list."
               : "Create the first job to build the category-specific Drive folder tree for this business."
           }
         />
-      ) : (
-        <JobList businessId={businessId} currentStatus={selectedStatus} jobs={jobsResult.jobs} />
-      )}
+      ) : null}
     </div>
   );
 }

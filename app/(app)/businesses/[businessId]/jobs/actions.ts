@@ -20,6 +20,7 @@ export async function submitNewJob(
   formData: FormData
 ): Promise<JobFormState> {
   const session = await requireSession();
+  let jobId: string;
 
   try {
     const result = await createJobForBusiness({
@@ -34,8 +35,7 @@ export async function submitNewJob(
         job_date: getOptionalFormValue(formData, "job_date")
       }
     });
-
-    redirect(`/businesses/${businessId}/jobs/${result.job.id}`);
+    jobId = result.job.id;
   } catch (error) {
     if (error instanceof ZodError) {
       return {
@@ -53,4 +53,6 @@ export async function submitNewJob(
       error: "Field-Snap could not create the job."
     };
   }
+
+  redirect(`/businesses/${businessId}/jobs/${jobId}`);
 }

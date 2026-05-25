@@ -4,6 +4,7 @@ import { env } from "@/lib/server/env";
 const GOOGLE_AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_DRIVE_FILES_URL = "https://www.googleapis.com/drive/v3/files";
+const GOOGLE_DRIVE_UPLOAD_URL = "https://www.googleapis.com/upload/drive/v3/files";
 const GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
 
 export const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
@@ -224,5 +225,56 @@ export async function findGoogleDriveFolderByName(
   return {
     id: match.id,
     name: match.name
+  } satisfies GoogleDriveFile;
+}
+
+export async function uploadGoogleDriveFile(input: {
+  accessToken: string;
+  folderId: string;
+  filename: string;
+  mimeType: string;
+  bytes: Uint8Array;
+}) {
+  const boundary = `field-snap-${crypto.randomUUID()}`;
+  const metadata = JSON.stringify({
+    name: input.filename,
+    parents: [input.folderId]
+  });
+  const prefix =
+    `--${boundary}\r\n` +
+    "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
+    `${metadata}\r\n` +
+    `--${boundary}\r\n` +
+    `Content-Type: ${input.mimeType}\r\n\r\n`;
+  const suffix = `\r\n--${boundary}--`;
+  const prefixBytes = new TextEncoder().encode(prefix);
+  const suffixBytes = new TextEncoder().encode(suffix);
+  const body = new Uint8Array(prefixBytes.length + input.bytes.length + suffixBytes.length);
+
+  body.set(prefixBytes, 0);
+  body.set(input.bytes, prefixBytes.length);
+  body.set(suffixBytes, prefixBytes.length + input.bytes.length);
+
+  const response = await fetch(`${GOOGLE_DRIVE_UPLOAD_URL}?uploadType=multipart&fields=id,name`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${input.accessToken}`,
+      "Content-Type": `multipart/related; boundary=${boundary}`
+    },
+    body
+  });
+
+  const payload = await parseJson<GoogleDriveFileResponse>(response);
+
+  if (!response.ok || !payload.id || !payload.name) {
+    throw new AuthFlowError(
+      "callback_failed",
+      `Google Drive file upload failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return {
+    id: payload.id,
+    name: payload.name
   } satisfies GoogleDriveFile;
 }

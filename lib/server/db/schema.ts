@@ -86,3 +86,51 @@ export type JobFolderRow = {
   drive_folder_id: string;
   created_at: Date;
 };
+
+export type DocumentRow = {
+  id: string;
+  business_id: string;
+  job_id: string | null;
+  uploaded_by_user_id: string;
+  capture_context: "job" | "general";
+  original_drive_file_id: string;
+  current_drive_file_id: string;
+  current_drive_folder_id: string;
+  original_filename: string | null;
+  current_filename: string | null;
+  mime_type: string | null;
+  file_size_bytes: number | null;
+  status:
+    | "uploaded_to_in_process"
+    | "ai_processing"
+    | "auto_filed"
+    | "needs_review"
+    | "reviewed"
+    | "failed";
+  document_type: string | null;
+  target_folder_key: string | null;
+  vendor_or_party: string | null;
+  document_date: string | null;
+  amount: string | null;
+  currency: string | null;
+  invoice_number: string | null;
+  due_date: string | null;
+  ai_confidence: string | null;
+  ai_needs_review: boolean | null;
+  ai_reason: string | null;
+  ai_raw_response: unknown | null;
+  failure_reason: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
+
+export type DocumentProcessingJobRow = {
+  id: string;
+  document_id: string;
+  correlation_id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  attempts: number;
+  available_at: Date;
+  created_at: Date;
+  updated_at: Date;
+};

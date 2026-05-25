@@ -40,6 +40,14 @@ export default async function JobDetailsPage({
         >
           Open in Drive
         </Link>
+        {job.status === "active" ? (
+          <Link
+            className="inline-flex rounded-full bg-[color:var(--foreground)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+            href={`/businesses/${businessId}/jobs/${jobId}/snap`}
+          >
+            Snap
+          </Link>
+        ) : null}
         {membership.role === "owner_admin" && job.status === "active" ? (
           <form action={archiveJobAction.bind(null, businessId, jobId)}>
             <button

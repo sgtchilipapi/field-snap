@@ -131,7 +131,8 @@ export async function listJobsForBusiness(input: {
         or j.job_name ilike ${search}
         or coalesce(j.address, '') ilike ${search}
       )
-    order by j.job_date desc, j.created_at desc
+    order by j.created_at desc
+    limit 100
   `;
 
   return rows.map(mapJobWithCategory);
