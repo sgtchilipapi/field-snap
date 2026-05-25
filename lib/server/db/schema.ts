@@ -27,3 +27,16 @@ export type BusinessMembershipRow = {
   created_at: Date;
   updated_at: Date;
 };
+
+export type DriveConnectionRow = {
+  id: string;
+  business_id: string;
+  connected_by_user_id: string;
+  google_account_email: string;
+  access_token_encrypted: string | null;
+  refresh_token_encrypted: string | null;
+  scopes: string[];
+  status: "active" | "revoked" | "error";
+  created_at: Date;
+  updated_at: Date;
+};

@@ -7,6 +7,7 @@ const validEnv = {
   SESSION_SECRET: "12345678901234567890123456789012",
   GOOGLE_CLIENT_ID: "client-id",
   GOOGLE_CLIENT_SECRET: "client-secret",
+  DRIVE_TOKEN_ENCRYPTION_KEY: "abcdefghijklmnopqrstuvwxyz123456",
   GEMINI_API_KEY: "gemini-key",
   QUEUE_REDIS_URL: "redis://localhost:6379",
   QUEUE_PREFIX: "field-snap"
@@ -25,6 +26,15 @@ describe("parseServerEnv", () => {
 
   it("accepts a complete configuration", () => {
     expect(parseServerEnv(validEnv)).toMatchObject(validEnv);
+  });
+
+  it("falls back to SESSION_SECRET when DRIVE_TOKEN_ENCRYPTION_KEY is omitted", () => {
+    const parsed = parseServerEnv({
+      ...validEnv,
+      DRIVE_TOKEN_ENCRYPTION_KEY: undefined
+    });
+
+    expect(parsed.DRIVE_TOKEN_ENCRYPTION_KEY).toBe(validEnv.SESSION_SECRET);
   });
 
   it("fails clearly when required keys are missing", () => {

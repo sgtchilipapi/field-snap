@@ -14,16 +14,10 @@ export async function submitNewBusiness(
   formData: FormData
 ): Promise<NewBusinessFormState> {
   const session = await requireSession();
+  let business;
 
   try {
-    const business = await createBusiness({ name: formData.get("name") }, session.userId);
-    redirect(
-      getBusinessLandingPath({
-        id: business.id,
-        role: "owner_admin",
-        driveConnected: false
-      })
-    );
+    business = await createBusiness({ name: formData.get("name") }, session.userId);
   } catch (error) {
     if (error instanceof Error) {
       return {
@@ -35,4 +29,12 @@ export async function submitNewBusiness(
       error: "Field-Snap could not create the business."
     };
   }
+
+  redirect(
+    getBusinessLandingPath({
+      id: business.id,
+      role: "owner_admin",
+      driveConnected: false
+    })
+  );
 }

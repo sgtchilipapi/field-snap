@@ -41,3 +41,13 @@ export async function getBusinessDetailsForUser(
 ): Promise<BusinessDetails | null> {
   return getBusinessForUser(businessId, userId);
 }
+
+export async function getBusinessOwnerDetailsForUser(businessId: string, userId: string) {
+  const details = await getBusinessForUser(businessId, userId);
+
+  if (!details || details.membership.role !== "owner_admin" || details.membership.status !== "active") {
+    return null;
+  }
+
+  return details;
+}

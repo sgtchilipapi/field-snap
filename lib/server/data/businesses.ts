@@ -129,3 +129,23 @@ export async function getBusinessForUser(
     }
   };
 }
+
+export async function updateBusinessDriveRootFolder(businessId: string, driveRootFolderId: string) {
+  const rows = await db<BusinessRow[]>`
+    update businesses
+    set
+      drive_root_folder_id = ${driveRootFolderId},
+      updated_at = now()
+    where id = ${businessId}
+    returning
+      id,
+      name,
+      owner_user_id,
+      drive_root_folder_id,
+      general_docs_folder_id,
+      created_at,
+      updated_at
+  `;
+
+  return rows[0] ? mapBusiness(rows[0]) : null;
+}

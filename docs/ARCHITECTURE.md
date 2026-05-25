@@ -290,9 +290,9 @@ Get business details.
 
 Starts Drive OAuth.
 
-### `GET /businesses/:businessId/drive/callback`
+### `GET /auth/google/drive/callback`
 
-Stores Drive token, creates or reuses the root folder, and ensures the default category and general folder template exists.
+Stores Drive token, creates or reuses the root folder, and uses OAuth state to resolve the business association.
 
 ### `GET /businesses/:businessId/drive/status`
 

@@ -1,0 +1,148 @@
+import {
+  getBusinessForUser,
+  updateBusinessDriveRootFolder
+} from "@/lib/server/data/businesses";
+import {
+  getDriveConnectionForBusiness,
+  updateDriveConnectionStatus,
+  upsertDriveConnection
+} from "@/lib/server/data/drive-connections";
+import {
+  createGoogleDriveFolder,
+  exchangeCodeForGoogleDriveTokens,
+  fetchGoogleDriveAccountEmail,
+  getGoogleDriveFolder,
+  type GoogleDriveTokens
+} from "@/lib/server/integrations/google/drive";
+import { encryptSecret } from "@/lib/server/security/encryption";
+
+export type BusinessDriveStatus = {
+  connected: boolean;
+  googleAccountEmail: string | null;
+  rootFolderId: string | null;
+  driveOpenUrl: string | null;
+  connectionStatus: "not_connected" | "active" | "revoked" | "error";
+};
+
+export function getBusinessDriveOpenUrl(rootFolderId: string | null) {
+  return rootFolderId ? `https://drive.google.com/drive/folders/${rootFolderId}` : null;
+}
+
+export async function getBusinessDriveStatusForUser(businessId: string, userId: string) {
+  const [details, connection] = await Promise.all([
+    getBusinessForUser(businessId, userId),
+    getDriveConnectionForBusiness(businessId)
+  ]);
+
+  if (!details) {
+    return null;
+  }
+
+  const connected = Boolean(
+    details.business.drive_root_folder_id && connection && connection.status === "active"
+  );
+
+  return {
+    connected,
+    googleAccountEmail: connection?.google_account_email ?? null,
+    rootFolderId: details.business.drive_root_folder_id,
+    driveOpenUrl: getBusinessDriveOpenUrl(details.business.drive_root_folder_id),
+    connectionStatus: connection?.status ?? "not_connected"
+  } satisfies BusinessDriveStatus;
+}
+
+async function ensureBusinessRootFolder(input: {
+  businessId: string;
+  businessName: string;
+  accessToken: string;
+  existingRootFolderId: string | null;
+}) {
+  if (input.existingRootFolderId) {
+    const existingFolder = await getGoogleDriveFolder(input.accessToken, input.existingRootFolderId);
+
+    if (existingFolder) {
+      return existingFolder.id;
+    }
+  }
+
+  const folder = await createGoogleDriveFolder(
+    input.accessToken,
+    `Field-Snap - ${input.businessName}`
+  );
+
+  await updateBusinessDriveRootFolder(input.businessId, folder.id);
+
+  return folder.id;
+}
+
+async function persistBusinessDriveConnection(input: {
+  accessToken: string;
+  businessId: string;
+  connectedByUserId: string;
+  existingRefreshTokenEncrypted: string | null;
+  googleAccountEmail: string;
+  rootFolderId: string;
+  tokens: GoogleDriveTokens;
+}) {
+  await upsertDriveConnection({
+    businessId: input.businessId,
+    connectedByUserId: input.connectedByUserId,
+    googleAccountEmail: input.googleAccountEmail,
+    accessTokenEncrypted: encryptSecret(input.tokens.accessToken),
+    refreshTokenEncrypted: input.tokens.refreshToken
+      ? encryptSecret(input.tokens.refreshToken)
+      : input.existingRefreshTokenEncrypted,
+    scopes: input.tokens.scopes,
+    status: "active"
+  });
+
+  await updateBusinessDriveRootFolder(input.businessId, input.rootFolderId);
+}
+
+export async function connectBusinessDriveFromCode(input: {
+  businessId: string;
+  connectedByUserId: string;
+  code: string;
+}) {
+  const details = await getBusinessForUser(input.businessId, input.connectedByUserId);
+
+  if (!details || details.membership.role !== "owner_admin" || details.membership.status !== "active") {
+    return null;
+  }
+
+  const existingConnection = await getDriveConnectionForBusiness(input.businessId);
+
+  try {
+    const tokens = await exchangeCodeForGoogleDriveTokens({
+      code: input.code
+    });
+    const googleAccountEmail = await fetchGoogleDriveAccountEmail(tokens.accessToken);
+    const rootFolderId = await ensureBusinessRootFolder({
+      businessId: input.businessId,
+      businessName: details.business.name,
+      accessToken: tokens.accessToken,
+      existingRootFolderId: details.business.drive_root_folder_id
+    });
+
+    await persistBusinessDriveConnection({
+      accessToken: tokens.accessToken,
+      businessId: input.businessId,
+      connectedByUserId: input.connectedByUserId,
+      existingRefreshTokenEncrypted: existingConnection?.refresh_token_encrypted ?? null,
+      googleAccountEmail,
+      rootFolderId,
+      tokens
+    });
+
+    return {
+      rootFolderId,
+      googleAccountEmail
+    };
+  } catch (error) {
+    if (existingConnection) {
+      await updateDriveConnectionStatus(input.businessId, "error");
+    }
+
+    throw error;
+  }
+}

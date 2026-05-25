@@ -252,6 +252,10 @@ Acceptance
 
 ## WO-04 — Google Drive connection
 
+Status
+
+`done`
+
 Goal
 
 Connect a business to the owner's Google Drive and establish the root folder that later work will build under.
@@ -264,8 +268,8 @@ Implement
 
 1. Add Drive connect UI under business settings and allow only `owner_admin` to use it.
 2. Implement `POST /businesses/:businessId/drive/connect` to start Google Drive OAuth with business-scoped state and CSRF protection.
-3. Request the minimum useful Drive scope first. Start with `drive.file` and only broaden if implementation proves it cannot support folder creation and file movement for app-created files.
-4. Implement `GET /businesses/:businessId/drive/callback` to exchange the OAuth code, encrypt token material, and persist a single active `drive_connections` record for the business.
+3. Request the minimum useful Drive scope first. If `drive.file` proves insufficient for owner-authorized root folder creation and later file movement, broaden to `drive`.
+4. Implement `GET /auth/google/drive/callback` to exchange the OAuth code, use business-scoped state plus CSRF validation, encrypt token material, and persist a single active `drive_connections` record for the business.
 5. Create the business root folder exactly as `Field-Snap - [Business Name]` if `businesses.drive_root_folder_id` is empty.
 6. If the business already has a root folder id, verify the app can still access it and reuse it instead of creating a duplicate tree.
 7. Update the business record with the root folder id once it is confirmed valid.
