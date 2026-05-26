@@ -13,6 +13,10 @@ vi.mock("@/lib/server/data/drive-connections", () => ({
   updateDriveConnectionStatus: vi.fn()
 }));
 
+vi.mock("@/lib/server/data/general-folders", () => ({
+  getGeneralFoldersForBusiness: vi.fn()
+}));
+
 vi.mock("@/lib/server/integrations/google/drive", () => ({
   uploadGoogleDriveFile: vi.fn()
 }));
@@ -25,17 +29,24 @@ vi.mock("@/lib/server/services/job-service", () => ({
   getJobDetailsForUser: vi.fn()
 }));
 
+vi.mock("@/lib/server/services/business-service", () => ({
+  getBusinessDetailsForUser: vi.fn()
+}));
+
 import { createDocument } from "@/lib/server/data/documents";
 import { enqueueDocumentProcessingJob } from "@/lib/server/data/document-processing-jobs";
 import {
   getDriveConnectionForBusiness,
   updateDriveConnectionStatus
 } from "@/lib/server/data/drive-connections";
+import { getGeneralFoldersForBusiness } from "@/lib/server/data/general-folders";
 import { uploadGoogleDriveFile } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
+import { getBusinessDetailsForUser } from "@/lib/server/services/business-service";
 import { getJobDetailsForUser } from "@/lib/server/services/job-service";
 import {
   DocumentUploadError,
+  uploadGeneralDocument,
   uploadJobDocument
 } from "@/lib/server/services/document-upload-service";
 
@@ -43,8 +54,10 @@ const mockedCreateDocument = vi.mocked(createDocument);
 const mockedEnqueueDocumentProcessingJob = vi.mocked(enqueueDocumentProcessingJob);
 const mockedGetDriveConnectionForBusiness = vi.mocked(getDriveConnectionForBusiness);
 const mockedUpdateDriveConnectionStatus = vi.mocked(updateDriveConnectionStatus);
+const mockedGetGeneralFoldersForBusiness = vi.mocked(getGeneralFoldersForBusiness);
 const mockedUploadGoogleDriveFile = vi.mocked(uploadGoogleDriveFile);
 const mockedDecryptSecret = vi.mocked(decryptSecret);
+const mockedGetBusinessDetailsForUser = vi.mocked(getBusinessDetailsForUser);
 const mockedGetJobDetailsForUser = vi.mocked(getJobDetailsForUser);
 
 describe("document-upload-service", () => {
@@ -63,6 +76,21 @@ describe("document-upload-service", () => {
         status: "active"
       }
     } as never);
+    mockedGetBusinessDetailsForUser.mockResolvedValue({
+      business: {
+        id: "business-1",
+        name: "ABC Landscaping",
+        owner_user_id: "user-1",
+        drive_root_folder_id: "root-1",
+        general_docs_folder_id: "general-root-1",
+        created_at: new Date(),
+        updated_at: new Date()
+      },
+      membership: {
+        role: "reviewer",
+        status: "active"
+      }
+    });
     mockedGetDriveConnectionForBusiness.mockResolvedValue({
       id: "connection-1",
       business_id: "business-1",
@@ -75,6 +103,24 @@ describe("document-upload-service", () => {
       created_at: new Date(),
       updated_at: new Date()
     });
+    mockedGetGeneralFoldersForBusiness.mockResolvedValue([
+      {
+        id: "general-folder-1",
+        business_id: "business-1",
+        folder_key: "in_process",
+        folder_name: "00 In-Process",
+        drive_folder_id: "general-in-process-1",
+        created_at: new Date()
+      },
+      {
+        id: "general-folder-2",
+        business_id: "business-1",
+        folder_key: "needs_review",
+        folder_name: "99 Needs Review",
+        drive_folder_id: "general-needs-review-1",
+        created_at: new Date()
+      }
+    ]);
     mockedDecryptSecret.mockReturnValue("access-token");
     mockedUploadGoogleDriveFile.mockResolvedValue({
       id: "drive-file-1",
@@ -206,5 +252,71 @@ describe("document-upload-service", () => {
     } satisfies Partial<DocumentUploadError>);
 
     expect(mockedUploadGoogleDriveFile).not.toHaveBeenCalled();
+  });
+
+  it("uploads a general business document into the general in-process folder and enqueues processing", async () => {
+    const file = createImageFile({
+      name: "insurance-card.jpg",
+      type: "image/jpeg",
+      contents: "image-bytes"
+    });
+
+    const result = await uploadGeneralDocument({
+      businessId: "business-1",
+      userId: "user-1",
+      file
+    });
+
+    expect(result).toEqual({
+      documentId: "document-1",
+      status: "uploaded_to_in_process"
+    });
+    expect(mockedUploadGoogleDriveFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        folderId: "general-in-process-1",
+        filename: "insurance-card.jpg",
+        mimeType: "image/jpeg"
+      })
+    );
+    expect(mockedCreateDocument).toHaveBeenCalledWith(
+      expect.objectContaining({
+        captureContext: "general",
+        jobId: null,
+        currentDriveFolderId: "general-in-process-1"
+      })
+    );
+    expect(mockedEnqueueDocumentProcessingJob).toHaveBeenCalled();
+  });
+
+  it("rejects general uploads for field users", async () => {
+    mockedGetBusinessDetailsForUser.mockResolvedValue({
+      business: {
+        id: "business-1",
+        name: "ABC Landscaping",
+        owner_user_id: "user-1",
+        drive_root_folder_id: "root-1",
+        general_docs_folder_id: "general-root-1",
+        created_at: new Date(),
+        updated_at: new Date()
+      },
+      membership: {
+        role: "field_user",
+        status: "active"
+      }
+    });
+
+    await expect(
+      uploadGeneralDocument({
+        businessId: "business-1",
+        userId: "user-1",
+        file: createImageFile({
+          name: "insurance-card.jpg",
+          type: "image/jpeg",
+          contents: "image-bytes"
+        })
+      })
+    ).rejects.toMatchObject({
+      code: "forbidden"
+    } satisfies Partial<DocumentUploadError>);
   });
 });

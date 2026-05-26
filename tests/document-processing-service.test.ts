@@ -69,6 +69,7 @@ import {
   getDriveConnectionForBusiness,
   updateDriveConnectionStatus
 } from "@/lib/server/data/drive-connections";
+import { getGeneralFoldersForBusiness } from "@/lib/server/data/general-folders";
 import { listJobFolders } from "@/lib/server/data/job-folders";
 import { getJobForBusiness } from "@/lib/server/data/jobs";
 import { findUserById } from "@/lib/server/data/users";
@@ -91,6 +92,7 @@ const mockedUpdateDocumentAiFields = vi.mocked(updateDocumentAiFields);
 const mockedUpdateDocumentProcessingState = vi.mocked(updateDocumentProcessingState);
 const mockedGetDriveConnectionForBusiness = vi.mocked(getDriveConnectionForBusiness);
 const mockedUpdateDriveConnectionStatus = vi.mocked(updateDriveConnectionStatus);
+const mockedGetGeneralFoldersForBusiness = vi.mocked(getGeneralFoldersForBusiness);
 const mockedListJobFolders = vi.mocked(listJobFolders);
 const mockedGetJobForBusiness = vi.mocked(getJobForBusiness);
 const mockedFindUserById = vi.mocked(findUserById);
@@ -219,6 +221,32 @@ describe("document-processing-service", () => {
         created_at: new Date()
       }
     ]);
+    mockedGetGeneralFoldersForBusiness.mockResolvedValue([
+      {
+        id: "general-folder-1",
+        business_id: "business-1",
+        folder_key: "in_process",
+        folder_name: "00 In-Process",
+        drive_folder_id: "general-in-process-1",
+        created_at: new Date()
+      },
+      {
+        id: "general-folder-2",
+        business_id: "business-1",
+        folder_key: "tax",
+        folder_name: "03 Tax",
+        drive_folder_id: "tax-1",
+        created_at: new Date()
+      },
+      {
+        id: "general-folder-3",
+        business_id: "business-1",
+        folder_key: "needs_review",
+        folder_name: "99 Needs Review",
+        drive_folder_id: "general-needs-review-1",
+        created_at: new Date()
+      }
+    ]);
     mockedGetDriveConnectionForBusiness.mockResolvedValue({
       id: "connection-1",
       business_id: "business-1",
@@ -337,6 +365,79 @@ describe("document-processing-service", () => {
       expect.objectContaining({
         status: "needs_review",
         currentDriveFolderId: "needs-review-1",
+        failureReason: null
+      })
+    );
+  });
+
+  it("routes a general business document into the matching general folder", async () => {
+    mockedGetDocumentById.mockResolvedValue({
+      id: "document-1",
+      business_id: "business-1",
+      job_id: null,
+      uploaded_by_user_id: "user-1",
+      capture_context: "general",
+      original_drive_file_id: "drive-file-1",
+      current_drive_file_id: "drive-file-1",
+      current_drive_folder_id: "general-in-process-1",
+      original_filename: "tax-form.jpg",
+      current_filename: "tax-form.jpg",
+      mime_type: "image/jpeg",
+      file_size_bytes: 1024,
+      status: "uploaded_to_in_process",
+      document_type: null,
+      target_folder_key: null,
+      vendor_or_party: null,
+      document_date: null,
+      amount: null,
+      currency: null,
+      invoice_number: null,
+      due_date: null,
+      ai_confidence: null,
+      ai_needs_review: null,
+      ai_reason: null,
+      ai_raw_response: null,
+      failure_reason: null,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+
+    const provider = createProvider(
+      Promise.resolve({
+        document_type: "tax_document",
+        target_folder_key: "tax",
+        suggested_filename: "IRS Notice - 2026-05-21.jpg",
+        vendor_or_party: "IRS",
+        document_date: "2026-05-21",
+        amount: null,
+        currency: null,
+        invoice_number: null,
+        due_date: null,
+        confidence: 0.99,
+        needs_review: false,
+        reason: "Tax notice",
+        raw_provider_payload: { ok: true },
+        valid: true
+      })
+    );
+
+    const result = await runNextDocumentProcessingJob(provider as never);
+
+    expect(result).toEqual({
+      jobId: "processing-job-1",
+      documentId: "document-1",
+      status: "auto_filed"
+    });
+    expect(mockedMoveGoogleDriveFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fromFolderId: "general-in-process-1",
+        toFolderId: "tax-1"
+      })
+    );
+    expect(mockedUpdateDocumentProcessingState).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: "auto_filed",
+        currentDriveFolderId: "tax-1",
         failureReason: null
       })
     );

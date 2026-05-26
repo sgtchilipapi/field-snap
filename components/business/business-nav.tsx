@@ -30,6 +30,9 @@ export function BusinessNav({
       <p className="font-medium text-[color:var(--foreground)]">Role: {role}</p>
       <NavLink href={`/businesses/${businessId}/jobs`} label="Jobs" />
       {role !== "field_user" ? (
+        <NavLink href={`/businesses/${businessId}/upload-general`} label="General upload" />
+      ) : null}
+      {role !== "field_user" ? (
         <NavLink href="/businesses" label="Businesses" />
       ) : null}
       {role === "owner_admin" ? (

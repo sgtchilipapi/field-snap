@@ -509,6 +509,10 @@ Acceptance
 
 ## WO-11 — General upload
 
+Status
+
+`done`
+
 Goal
 
 Support uploads for business-level documents that are not tied to a specific job.
