@@ -1,9 +1,22 @@
 import { db } from "@/lib/server/db/client";
 import type { AuditLogRow } from "@/lib/server/db/schema";
 
+export type AuditLogWithActorRow = AuditLogRow & {
+  actor_name: string | null;
+  actor_email: string | null;
+};
+
 function mapAuditLog(row: AuditLogRow): AuditLogRow {
   return {
     ...row
+  };
+}
+
+function mapAuditLogWithActor(row: AuditLogWithActorRow): AuditLogWithActorRow {
+  return {
+    ...mapAuditLog(row),
+    actor_name: row.actor_name,
+    actor_email: row.actor_email
   };
 }
 
@@ -51,4 +64,33 @@ export async function createAuditLog(input: {
   `;
 
   return mapAuditLog(rows[0]);
+}
+
+export async function listAuditLogsForEntity(input: {
+  businessId: string;
+  entityType: string;
+  entityId: string;
+}) {
+  const rows = await db<AuditLogWithActorRow[]>`
+    select
+      al.id,
+      al.business_id,
+      al.actor_user_id,
+      al.entity_type,
+      al.entity_id,
+      al.action,
+      al.old_value,
+      al.new_value,
+      al.created_at,
+      u.name as actor_name,
+      u.email as actor_email
+    from audit_logs al
+    left join users u on u.id = al.actor_user_id
+    where al.business_id = ${input.businessId}
+      and al.entity_type = ${input.entityType}
+      and al.entity_id = ${input.entityId}::uuid
+    order by al.created_at asc
+  `;
+
+  return rows.map(mapAuditLogWithActor);
 }

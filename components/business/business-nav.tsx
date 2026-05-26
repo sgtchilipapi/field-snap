@@ -33,6 +33,9 @@ export function BusinessNav({
         <NavLink href={`/businesses/${businessId}/upload-general`} label="General upload" />
       ) : null}
       {role !== "field_user" ? (
+        <NavLink href={`/businesses/${businessId}/review`} label="Review" />
+      ) : null}
+      {role !== "field_user" ? (
         <NavLink href="/businesses" label="Businesses" />
       ) : null}
       {role === "owner_admin" ? (

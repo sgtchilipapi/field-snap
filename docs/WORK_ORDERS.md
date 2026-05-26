@@ -543,6 +543,10 @@ Acceptance
 
 ## WO-12 — Review dashboard
 
+Status
+
+`done`
+
 Goal
 
 Provide reviewers and owners a single place to inspect uncertain, failed, and recent documents.
@@ -573,6 +577,10 @@ Acceptance
 4. The review UI remains explicitly scoped to reviewing and correcting, not accounting workflows.
 
 ## WO-13 — Review correction
+
+Status
+
+`done`
 
 Goal
 
