@@ -5,6 +5,7 @@ import { env } from "@/lib/server/env";
 
 export const SESSION_COOKIE_NAME = "field-snap-session";
 export const AUTH_STATE_COOKIE_NAME = "field-snap-auth-state";
+export const AUTH_RETURN_TO_COOKIE_NAME = "field-snap-auth-return-to";
 export const DRIVE_AUTH_STATE_COOKIE_NAME = "field-snap-drive-auth-state";
 
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
@@ -39,6 +40,14 @@ function safeEqual(left: string, right: string) {
 
 function shouldUseSecureCookies() {
   return env.APP_BASE_URL.startsWith("https://");
+}
+
+export function normalizeReturnPath(value: string | null | undefined) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return null;
+  }
+
+  return value;
 }
 
 export function createSessionCookieValue(
@@ -141,6 +150,41 @@ export async function clearOAuthState() {
   const cookieStore = await cookies();
 
   cookieStore.set(AUTH_STATE_COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: shouldUseSecureCookies(),
+    path: "/",
+    expires: new Date(0)
+  });
+}
+
+export async function setPostAuthRedirect(path: string) {
+  const normalized = normalizeReturnPath(path);
+
+  if (!normalized) {
+    return;
+  }
+
+  const cookieStore = await cookies();
+
+  cookieStore.set(AUTH_RETURN_TO_COOKIE_NAME, normalized, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: shouldUseSecureCookies(),
+    path: "/",
+    maxAge: 60 * 10
+  });
+}
+
+export async function getPostAuthRedirect() {
+  const cookieStore = await cookies();
+  return normalizeReturnPath(cookieStore.get(AUTH_RETURN_TO_COOKIE_NAME)?.value) ?? null;
+}
+
+export async function clearPostAuthRedirect() {
+  const cookieStore = await cookies();
+
+  cookieStore.set(AUTH_RETURN_TO_COOKIE_NAME, "", {
     httpOnly: true,
     sameSite: "lax",
     secure: shouldUseSecureCookies(),

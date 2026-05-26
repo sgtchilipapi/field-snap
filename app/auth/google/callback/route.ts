@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AuthFlowError } from "@/lib/server/auth/errors";
-import { clearOAuthState, getOAuthState, setSession } from "@/lib/server/auth/session";
+import {
+  clearOAuthState,
+  clearPostAuthRedirect,
+  getOAuthState,
+  getPostAuthRedirect,
+  setSession
+} from "@/lib/server/auth/session";
 import { env } from "@/lib/server/env";
 import { fetchGoogleIdentityFromCode } from "@/lib/server/integrations/google/oauth";
 import { logError } from "@/lib/server/logger";
@@ -17,10 +23,10 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get("error");
   const code = searchParams.get("code");
   const state = searchParams.get("state");
-  const expectedState = await getOAuthState();
+  const [expectedState, postAuthRedirect] = await Promise.all([getOAuthState(), getPostAuthRedirect()]);
 
   if (error === "access_denied") {
-    await clearOAuthState();
+    await Promise.all([clearOAuthState(), clearPostAuthRedirect()]);
     return redirectToLogin("access_denied");
   }
 
@@ -31,7 +37,7 @@ export async function GET(request: NextRequest) {
       hasExpectedState: Boolean(expectedState),
       stateMatched: Boolean(state && expectedState && state === expectedState)
     });
-    await clearOAuthState();
+    await Promise.all([clearOAuthState(), clearPostAuthRedirect()]);
     return redirectToLogin("callback_failed");
   }
 
@@ -39,12 +45,12 @@ export async function GET(request: NextRequest) {
     const identity = await fetchGoogleIdentityFromCode(code);
     const result = await loginOrCreateUserFromGoogle(identity);
 
-    await clearOAuthState();
+    await Promise.all([clearOAuthState(), clearPostAuthRedirect()]);
     await setSession(result.user.id);
 
-    return NextResponse.redirect(new URL(result.redirectTo, env.APP_BASE_URL));
+    return NextResponse.redirect(new URL(postAuthRedirect ?? result.redirectTo, env.APP_BASE_URL));
   } catch (caughtError) {
-    await clearOAuthState();
+    await Promise.all([clearOAuthState(), clearPostAuthRedirect()]);
 
     if (caughtError instanceof AuthFlowError) {
       logError("Google auth flow failed", caughtError, {

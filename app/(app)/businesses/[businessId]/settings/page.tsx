@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
+import { InvitationManager } from "@/components/business/invitation-manager";
 import { PageHeader } from "@/components/layout/page-header";
 import { InlineAlert } from "@/components/ui/inline-alert";
 import { requireSession } from "@/lib/server/auth/session";
 import { getBusinessDetailsForUser } from "@/lib/server/services/business-service";
 import { getBusinessDriveStatusForUser } from "@/lib/server/services/drive-service";
+import { listInvitationsForBusinessForOwner } from "@/lib/server/services/invitation-service";
 import Link from "next/link";
 
 export default async function BusinessSettingsPage({
@@ -31,6 +33,20 @@ export default async function BusinessSettingsPage({
   }
 
   const driveConnected = driveStatus.connected;
+  const isOwner = details.membership.role === "owner_admin";
+  const invitations = isOwner
+    ? (
+        await listInvitationsForBusinessForOwner({
+          businessId,
+          userId: session.userId
+        })
+      ).map((invitation) => ({
+        ...invitation,
+        expires_at: invitation.expires_at.toISOString(),
+        created_at: invitation.created_at.toISOString(),
+        accepted_at: invitation.accepted_at?.toISOString() ?? null
+      }))
+    : [];
   const driveAlert = driveError
     ? {
         title: "Drive connection failed",
@@ -50,8 +66,6 @@ export default async function BusinessSettingsPage({
             : "Connect the owner's Google Drive next so Field-Snap can create and manage the business root folder.",
           variant: driveConnected ? ("success" as const) : ("info" as const)
         };
-  const isOwner = details.membership.role === "owner_admin";
-
   return (
     <div className="space-y-8">
       <PageHeader
@@ -155,6 +169,7 @@ export default async function BusinessSettingsPage({
           Open in Drive
         </Link>
       ) : null}
+      {isOwner ? <InvitationManager businessId={businessId} invitations={invitations} /> : null}
     </div>
   );
 }

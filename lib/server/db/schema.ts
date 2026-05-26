@@ -135,6 +135,19 @@ export type DocumentProcessingJobRow = {
   updated_at: Date;
 };
 
+export type InvitationRow = {
+  id: string;
+  business_id: string;
+  invited_email: string;
+  role: "reviewer" | "field_user";
+  token_hash: string;
+  status: "pending" | "accepted" | "expired" | "revoked";
+  invited_by_user_id: string;
+  expires_at: Date;
+  created_at: Date;
+  accepted_at: Date | null;
+};
+
 export type AuditLogRow = {
   id: string;
   business_id: string;

@@ -617,6 +617,10 @@ Acceptance
 
 ## WO-14 — Invitations
 
+Status
+
+`done`
+
 Goal
 
 Allow owners to add more users to a business with a secure invite flow tied to Google-login identity.

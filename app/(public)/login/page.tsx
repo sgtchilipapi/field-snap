@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import { InlineAlert } from "@/components/ui/inline-alert";
-import { getSession } from "@/lib/server/auth/session";
+import { getSession, normalizeReturnPath } from "@/lib/server/auth/session";
 import { getPostLoginRedirectForUser } from "@/lib/server/services/auth-service";
 
 const alertByError = {
@@ -44,6 +44,9 @@ export default async function LoginPage({
   const alert = errorCode ? alertByError[errorCode as keyof typeof alertByError] : null;
   const loggedOutParam = resolvedSearchParams.logged_out;
   const wasLoggedOut = Array.isArray(loggedOutParam) ? loggedOutParam[0] === "1" : loggedOutParam === "1";
+  const nextParam = resolvedSearchParams.next;
+  const nextPath = normalizeReturnPath(Array.isArray(nextParam) ? nextParam[0] : nextParam);
+  const loginHref = nextPath ? `/auth/google?next=${encodeURIComponent(nextPath)}` : "/auth/google";
 
   return (
     <>
@@ -69,7 +72,7 @@ export default async function LoginPage({
           business workflows.
         </p>
         <div className="mt-8 space-y-4">
-          <GoogleLoginButton />
+          <GoogleLoginButton href={loginHref} />
           {alert ? (
             <InlineAlert
               title={alert.title}
