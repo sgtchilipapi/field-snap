@@ -2,10 +2,10 @@ import { createDocument } from "@/lib/server/data/documents";
 import { enqueueDocumentProcessingJob } from "@/lib/server/data/document-processing-jobs";
 import { getDriveConnectionForBusiness, updateDriveConnectionStatus } from "@/lib/server/data/drive-connections";
 import { getGeneralFoldersForBusiness } from "@/lib/server/data/general-folders";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { AuthFlowError } from "@/lib/server/auth/errors";
 import { uploadGoogleDriveFile } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
-import { getBusinessDetailsForUser } from "@/lib/server/services/business-service";
 import { getJobDetailsForUser } from "@/lib/server/services/job-service";
 
 const MAX_UPLOAD_SIZE_BYTES = 15 * 1024 * 1024;
@@ -74,6 +74,16 @@ export async function uploadJobDocument(input: {
   userId: string;
   file: File;
 }) {
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.userId,
+    capability: "documents:upload_job"
+  });
+
+  if (!authorization.allowed) {
+    throw new DocumentUploadError("You do not have access to this business.", "forbidden");
+  }
+
   const result = await getJobDetailsForUser(input.businessId, input.jobId, input.userId);
 
   if (!result) {
@@ -143,17 +153,14 @@ export async function uploadGeneralDocument(input: {
   userId: string;
   file: File;
 }) {
-  const details = await getBusinessDetailsForUser(input.businessId, input.userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.userId,
+    capability: "documents:upload_general"
+  });
 
-  if (!details || details.membership.status !== "active") {
+  if (!authorization.allowed) {
     throw new DocumentUploadError("You do not have access to this business.", "forbidden");
-  }
-
-  if (details.membership.role === "field_user") {
-    throw new DocumentUploadError(
-      "Only owner-admin and reviewer members can upload general business documents.",
-      "forbidden"
-    );
   }
 
   const mimeType = validateUploadFile(input.file);

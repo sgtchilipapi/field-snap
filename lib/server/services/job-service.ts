@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { JOB_FOLDER_TEMPLATES } from "@/lib/server/constants/folder-template";
 import {
   findCategoryForBusinessByName,
@@ -20,8 +21,6 @@ import {
   updateJob as updateJobRecord
 } from "@/lib/server/data/jobs";
 import {
-  getBusinessDetailsForUser,
-  getBusinessOwnerDetailsForUser
 } from "@/lib/server/services/business-service";
 import { decryptSecret } from "@/lib/server/security/encryption";
 import { createGoogleDriveFolderInParent } from "@/lib/server/integrations/google/drive";
@@ -150,11 +149,17 @@ export async function createJobForBusiness(input: {
   userId: string;
   values: unknown;
 }) {
-  const ownerDetails = await getBusinessOwnerDetailsForUser(input.businessId, input.userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.userId,
+    capability: "jobs:manage"
+  });
 
-  if (!ownerDetails) {
+  if (!authorization.allowed) {
     throw new JobServiceError("Only owner-admin members can create jobs.", "forbidden");
   }
+
+  const ownerDetails = authorization.details;
 
   const parsed = createJobSchema.parse(input.values);
   const clientName = parsed.client_name.trim();
@@ -273,14 +278,18 @@ export async function listJobsForUser(input: {
   categoryId?: string | null;
   search?: string | null;
 }) {
-  const details = await getBusinessDetailsForUser(input.businessId, input.userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.userId,
+    capability: "jobs:view"
+  });
 
-  if (!details) {
+  if (!authorization.allowed) {
     return null;
   }
 
   return {
-    membership: details.membership,
+    membership: authorization.details.membership,
     jobs: await listJobsForBusiness({
       businessId: input.businessId,
       status: input.status,
@@ -291,9 +300,13 @@ export async function listJobsForUser(input: {
 }
 
 export async function getJobDetailsForUser(businessId: string, jobId: string, userId: string) {
-  const details = await getBusinessDetailsForUser(businessId, userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId,
+    userId,
+    capability: "jobs:view"
+  });
 
-  if (!details) {
+  if (!authorization.allowed) {
     return null;
   }
 
@@ -301,14 +314,14 @@ export async function getJobDetailsForUser(businessId: string, jobId: string, us
 
   if (!job) {
     return {
-      membership: details.membership,
+      membership: authorization.details.membership,
       job: null,
       folders: []
     };
   }
 
   return {
-    membership: details.membership,
+    membership: authorization.details.membership,
     job,
     folders: await listJobFolders(jobId)
   };
@@ -320,9 +333,13 @@ export async function updateJobForBusiness(input: {
   userId: string;
   values: unknown;
 }) {
-  const ownerDetails = await getBusinessOwnerDetailsForUser(input.businessId, input.userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.userId,
+    capability: "jobs:manage"
+  });
 
-  if (!ownerDetails) {
+  if (!authorization.allowed) {
     throw new JobServiceError("Only owner-admin members can update jobs.", "forbidden");
   }
 
@@ -372,9 +389,13 @@ export async function updateJobForBusiness(input: {
 }
 
 export async function archiveJobForBusiness(businessId: string, jobId: string, userId: string) {
-  const ownerDetails = await getBusinessOwnerDetailsForUser(businessId, userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId,
+    userId,
+    capability: "jobs:manage"
+  });
 
-  if (!ownerDetails) {
+  if (!authorization.allowed) {
     throw new JobServiceError("Only owner-admin members can archive jobs.", "forbidden");
   }
 

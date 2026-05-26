@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import type { InvitationRow } from "@/lib/server/db/schema";
 import {
   acceptInvitation as acceptInvitationRecord,
@@ -11,7 +12,6 @@ import {
   type InvitationListItem
 } from "@/lib/server/data/invitations";
 import { findUserById } from "@/lib/server/data/users";
-import { getBusinessOwnerDetailsForUser } from "@/lib/server/services/business-service";
 
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -100,9 +100,13 @@ export async function createInvitationForBusiness(input: {
   values: unknown;
   baseUrl: string;
 }) {
-  const details = await getBusinessOwnerDetailsForUser(input.businessId, input.userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.userId,
+    capability: "invitations:manage"
+  });
 
-  if (!details) {
+  if (!authorization.allowed) {
     throw new InvitationServiceError("Forbidden", "forbidden");
   }
 
@@ -131,9 +135,13 @@ export async function listInvitationsForBusinessForOwner(input: {
   businessId: string;
   userId: string;
 }) {
-  const details = await getBusinessOwnerDetailsForUser(input.businessId, input.userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.userId,
+    capability: "invitations:manage"
+  });
 
-  if (!details) {
+  if (!authorization.allowed) {
     throw new InvitationServiceError("Forbidden", "forbidden");
   }
 

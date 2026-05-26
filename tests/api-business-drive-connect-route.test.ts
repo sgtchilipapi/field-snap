@@ -6,28 +6,28 @@ vi.mock("@/lib/server/auth/session", () => ({
   setDriveOAuthState: vi.fn()
 }));
 
+vi.mock("@/lib/server/auth/business-authorization", () => ({
+  authorizeBusinessAccess: vi.fn()
+}));
+
 vi.mock("@/lib/server/integrations/google/drive", () => ({
   buildGoogleDriveAuthorizationUrl: vi.fn()
 }));
 
-vi.mock("@/lib/server/services/business-service", () => ({
-  getBusinessOwnerDetailsForUser: vi.fn()
-}));
-
 import { POST } from "@/app/api/businesses/[businessId]/drive/connect/route";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import {
   createOAuthState,
   getSession,
   setDriveOAuthState
 } from "@/lib/server/auth/session";
 import { buildGoogleDriveAuthorizationUrl } from "@/lib/server/integrations/google/drive";
-import { getBusinessOwnerDetailsForUser } from "@/lib/server/services/business-service";
 
+const mockedAuthorizeBusinessAccess = vi.mocked(authorizeBusinessAccess);
 const mockedCreateOAuthState = vi.mocked(createOAuthState);
 const mockedGetSession = vi.mocked(getSession);
 const mockedSetDriveOAuthState = vi.mocked(setDriveOAuthState);
 const mockedBuildGoogleDriveAuthorizationUrl = vi.mocked(buildGoogleDriveAuthorizationUrl);
-const mockedGetBusinessOwnerDetailsForUser = vi.mocked(getBusinessOwnerDetailsForUser);
 
 describe("/api/businesses/[businessId]/drive/connect", () => {
   beforeEach(() => {
@@ -36,19 +36,22 @@ describe("/api/businesses/[businessId]/drive/connect", () => {
 
   it("starts Drive OAuth for an owner-admin", async () => {
     mockedGetSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
-    mockedGetBusinessOwnerDetailsForUser.mockResolvedValue({
-      business: {
-        id: "business-1",
-        name: "ABC Landscaping",
-        owner_user_id: "user-1",
-        drive_root_folder_id: null,
-        general_docs_folder_id: null,
-        created_at: new Date(),
-        updated_at: new Date()
-      },
-      membership: {
-        role: "owner_admin",
-        status: "active"
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: true,
+      details: {
+        business: {
+          id: "business-1",
+          name: "ABC Landscaping",
+          owner_user_id: "user-1",
+          drive_root_folder_id: null,
+          general_docs_folder_id: null,
+          created_at: new Date(),
+          updated_at: new Date()
+        },
+        membership: {
+          role: "owner_admin",
+          status: "active"
+        }
       }
     });
     mockedCreateOAuthState.mockReturnValue("nonce-123");
@@ -86,7 +89,10 @@ describe("/api/businesses/[businessId]/drive/connect", () => {
 
   it("rejects non-owner requests", async () => {
     mockedGetSession.mockResolvedValue({ userId: "user-2", issuedAt: 1 });
-    mockedGetBusinessOwnerDetailsForUser.mockResolvedValue(null);
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: false,
+      details: null
+    });
 
     const response = await POST(new Request("http://localhost/api/businesses/business-1/drive/connect"), {
       params: Promise.resolve({ businessId: "business-1" })

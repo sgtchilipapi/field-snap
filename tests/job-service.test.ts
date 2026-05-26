@@ -28,9 +28,8 @@ vi.mock("@/lib/server/data/jobs", () => ({
   updateJob: vi.fn()
 }));
 
-vi.mock("@/lib/server/services/business-service", () => ({
-  getBusinessForUser: vi.fn(),
-  getBusinessOwnerDetailsForUser: vi.fn()
+vi.mock("@/lib/server/auth/business-authorization", () => ({
+  authorizeBusinessAccess: vi.fn()
 }));
 
 vi.mock("@/lib/server/security/encryption", () => ({
@@ -50,9 +49,9 @@ import {
 import { getDriveConnectionForBusiness, updateDriveConnectionStatus } from "@/lib/server/data/drive-connections";
 import { createJobFolder } from "@/lib/server/data/job-folders";
 import { createJob, findActiveDuplicateJob, getJobForBusiness, updateJob } from "@/lib/server/data/jobs";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { createGoogleDriveFolderInParent } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
-import { getBusinessOwnerDetailsForUser } from "@/lib/server/services/business-service";
 import { JobServiceError, createJobForBusiness, updateJobForBusiness } from "@/lib/server/services/job-service";
 
 const mockedFindCategoryForBusinessByName = vi.mocked(findCategoryForBusinessByName);
@@ -66,16 +65,18 @@ const mockedCreateJob = vi.mocked(createJob);
 const mockedFindActiveDuplicateJob = vi.mocked(findActiveDuplicateJob);
 const mockedGetJobForBusiness = vi.mocked(getJobForBusiness);
 const mockedUpdateJob = vi.mocked(updateJob);
+const mockedAuthorizeBusinessAccess = vi.mocked(authorizeBusinessAccess);
 const mockedCreateGoogleDriveFolderInParent = vi.mocked(createGoogleDriveFolderInParent);
 const mockedDecryptSecret = vi.mocked(decryptSecret);
-const mockedGetBusinessOwnerDetailsForUser = vi.mocked(getBusinessOwnerDetailsForUser);
 const categoryId = "11111111-1111-1111-8111-111111111111";
 
 describe("job-service", () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
-    mockedGetBusinessOwnerDetailsForUser.mockResolvedValue({
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: true,
+      details: {
       business: {
         id: "business-1",
         name: "ABC Landscaping",
@@ -88,6 +89,7 @@ describe("job-service", () => {
       membership: {
         role: "owner_admin",
         status: "active"
+      }
       }
     });
     mockedGetDriveConnectionForBusiness.mockResolvedValue({

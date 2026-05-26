@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { ZodError } from "zod";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
 import { createJobForBusiness, JobServiceError } from "@/lib/server/services/job-service";
 
@@ -21,6 +22,17 @@ export async function submitNewJob(
 ): Promise<JobFormState> {
   const session = await requireSession();
   let jobId: string;
+  const authorization = await authorizeBusinessAccess({
+    businessId,
+    userId: session.userId,
+    capability: "jobs:manage"
+  });
+
+  if (!authorization.allowed) {
+    return {
+      error: "Forbidden"
+    };
+  }
 
   try {
     const result = await createJobForBusiness({

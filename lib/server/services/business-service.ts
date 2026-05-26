@@ -1,7 +1,7 @@
 import { z } from "zod";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import {
   createBusinessForOwner,
-  getBusinessForUser,
   getBusinessesForUser,
   type BusinessDetails,
   type BusinessListItem
@@ -39,15 +39,21 @@ export async function getBusinessDetailsForUser(
   businessId: string,
   userId: string
 ): Promise<BusinessDetails | null> {
-  return getBusinessForUser(businessId, userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId,
+    userId,
+    capability: "business:view"
+  });
+
+  return authorization.allowed ? authorization.details : null;
 }
 
 export async function getBusinessOwnerDetailsForUser(businessId: string, userId: string) {
-  const details = await getBusinessForUser(businessId, userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId,
+    userId,
+    capability: "drive:manage"
+  });
 
-  if (!details || details.membership.role !== "owner_admin" || details.membership.status !== "active") {
-    return null;
-  }
-
-  return details;
+  return authorization.allowed ? authorization.details : null;
 }

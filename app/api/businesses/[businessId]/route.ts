@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { getSession } from "@/lib/server/auth/session";
-import { getBusinessDetailsForUser } from "@/lib/server/services/business-service";
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,11 +19,17 @@ export async function GET(
   }
 
   const { businessId } = await context.params;
-  const details = await getBusinessDetailsForUser(businessId, session.userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId,
+    userId: session.userId,
+    capability: "business:view"
+  });
 
-  if (!details) {
+  if (!authorization.allowed) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  const { details } = authorization;
 
   return NextResponse.json({
     id: details.business.id,

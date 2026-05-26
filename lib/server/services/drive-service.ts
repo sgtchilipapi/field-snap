@@ -1,7 +1,7 @@
 import {
-  getBusinessForUser,
   updateBusinessDriveRootFolder
 } from "@/lib/server/data/businesses";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import {
   getDriveConnectionForBusiness,
   updateDriveConnectionStatus,
@@ -29,14 +29,20 @@ export function getBusinessDriveOpenUrl(rootFolderId: string | null) {
 }
 
 export async function getBusinessDriveStatusForUser(businessId: string, userId: string) {
-  const [details, connection] = await Promise.all([
-    getBusinessForUser(businessId, userId),
-    getDriveConnectionForBusiness(businessId)
-  ]);
+  const authorization = await authorizeBusinessAccess({
+    businessId,
+    userId,
+    capability: "settings:view"
+  });
 
-  if (!details) {
+  if (!authorization.allowed) {
     return null;
   }
+
+  const [details, connection] = await Promise.all([
+    Promise.resolve(authorization.details),
+    getDriveConnectionForBusiness(businessId)
+  ]);
 
   const connected = Boolean(
     details.business.drive_root_folder_id && connection && connection.status === "active"
@@ -104,11 +110,17 @@ export async function connectBusinessDriveFromCode(input: {
   connectedByUserId: string;
   code: string;
 }) {
-  const details = await getBusinessForUser(input.businessId, input.connectedByUserId);
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.connectedByUserId,
+    capability: "drive:manage"
+  });
 
-  if (!details || details.membership.role !== "owner_admin" || details.membership.status !== "active") {
+  if (!authorization.allowed) {
     return null;
   }
+
+  const details = authorization.details;
 
   const existingConnection = await getDriveConnectionForBusiness(input.businessId);
 

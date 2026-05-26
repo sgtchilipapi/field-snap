@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { GeneralUploadForm } from "@/components/business/general-upload-form";
 import { PageHeader } from "@/components/layout/page-header";
+import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
-import { getBusinessDetailsForUser } from "@/lib/server/services/business-service";
 
 export default async function GeneralUploadPage({
   params
@@ -12,15 +11,11 @@ export default async function GeneralUploadPage({
 }) {
   const session = await requireSession();
   const { businessId } = await params;
-  const details = await getBusinessDetailsForUser(businessId, session.userId);
-
-  if (
-    !details ||
-    details.membership.status !== "active" ||
-    details.membership.role === "field_user"
-  ) {
-    notFound();
-  }
+  const details = await requireBusinessPageAccess({
+    businessId,
+    userId: session.userId,
+    capability: "documents:upload_general"
+  });
 
   return (
     <div className="space-y-8">

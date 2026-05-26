@@ -653,6 +653,10 @@ Acceptance
 
 ## WO-15 — Role-based access control
 
+Status
+
+`done`
+
 Goal
 
 Make authorization explicit and consistent across API routes, app routes, and visible navigation.

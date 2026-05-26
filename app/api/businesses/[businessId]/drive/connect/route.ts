@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { getSession, createOAuthState, setDriveOAuthState } from "@/lib/server/auth/session";
 import { buildGoogleDriveAuthorizationUrl } from "@/lib/server/integrations/google/drive";
-import { getBusinessOwnerDetailsForUser } from "@/lib/server/services/business-service";
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,9 +22,13 @@ export async function POST(
   }
 
   const { businessId } = await context.params;
-  const details = await getBusinessOwnerDetailsForUser(businessId, session.userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId,
+    userId: session.userId,
+    capability: "drive:manage"
+  });
 
-  if (!details) {
+  if (!authorization.allowed) {
     return forbidden();
   }
 

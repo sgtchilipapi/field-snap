@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { DocumentReviewEditor } from "@/components/business/document-review-editor";
 import { PageHeader } from "@/components/layout/page-header";
 import { InlineAlert } from "@/components/ui/inline-alert";
+import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
 import { getDocumentDetailForUser, type ReviewServiceError } from "@/lib/server/services/review-service";
 import { getDocumentContextLabel } from "@/lib/server/services/review-view";
@@ -58,6 +59,11 @@ export default async function DocumentDetailPage({
   const session = await requireSession();
   const { businessId, documentId } = await params;
   const { from } = await searchParams;
+  await requireBusinessPageAccess({
+    businessId,
+    userId: session.userId,
+    capability: "documents:view_audit"
+  });
 
   let result: Awaited<ReturnType<typeof getDocumentDetailForUser>>;
 

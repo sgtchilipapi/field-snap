@@ -13,6 +13,10 @@ vi.mock("@/lib/server/auth/session", () => ({
   requireSession: vi.fn()
 }));
 
+vi.mock("@/lib/server/auth/business-authorization", () => ({
+  authorizeBusinessAccess: vi.fn()
+}));
+
 vi.mock("@/lib/server/services/job-service", () => ({
   JobServiceError: class extends Error {
     code: string;
@@ -25,15 +29,30 @@ vi.mock("@/lib/server/services/job-service", () => ({
 }));
 
 import { submitNewJob } from "@/app/(app)/businesses/[businessId]/jobs/actions";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
 import { createJobForBusiness } from "@/lib/server/services/job-service";
 
+const mockedAuthorizeBusinessAccess = vi.mocked(authorizeBusinessAccess);
 const mockedRequireSession = vi.mocked(requireSession);
 const mockedCreateJobForBusiness = vi.mocked(createJobForBusiness);
 
 describe("submitNewJob", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: true,
+      details: {
+        business: {
+          id: "business-1",
+          name: "ABC Landscaping"
+        },
+        membership: {
+          role: "owner_admin",
+          status: "active"
+        }
+      }
+    } as never);
     mockedRequireSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
   });
 

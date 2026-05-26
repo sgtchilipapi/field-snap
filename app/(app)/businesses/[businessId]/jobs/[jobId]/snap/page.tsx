@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobUploadForm } from "@/components/business/job-upload-form";
 import { PageHeader } from "@/components/layout/page-header";
+import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
 import { getJobDetailsForUser } from "@/lib/server/services/job-service";
 
@@ -12,6 +13,11 @@ export default async function JobSnapPage({
 }) {
   const session = await requireSession();
   const { businessId, jobId } = await params;
+  await requireBusinessPageAccess({
+    businessId,
+    userId: session.userId,
+    capability: "documents:upload_job"
+  });
   const result = await getJobDetailsForUser(businessId, jobId, session.userId);
 
   if (!result || !result.job) {

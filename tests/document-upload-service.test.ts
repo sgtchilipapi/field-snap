@@ -17,6 +17,10 @@ vi.mock("@/lib/server/data/general-folders", () => ({
   getGeneralFoldersForBusiness: vi.fn()
 }));
 
+vi.mock("@/lib/server/auth/business-authorization", () => ({
+  authorizeBusinessAccess: vi.fn()
+}));
+
 vi.mock("@/lib/server/integrations/google/drive", () => ({
   uploadGoogleDriveFile: vi.fn()
 }));
@@ -29,10 +33,6 @@ vi.mock("@/lib/server/services/job-service", () => ({
   getJobDetailsForUser: vi.fn()
 }));
 
-vi.mock("@/lib/server/services/business-service", () => ({
-  getBusinessDetailsForUser: vi.fn()
-}));
-
 import { createDocument } from "@/lib/server/data/documents";
 import { enqueueDocumentProcessingJob } from "@/lib/server/data/document-processing-jobs";
 import {
@@ -40,9 +40,9 @@ import {
   updateDriveConnectionStatus
 } from "@/lib/server/data/drive-connections";
 import { getGeneralFoldersForBusiness } from "@/lib/server/data/general-folders";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { uploadGoogleDriveFile } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
-import { getBusinessDetailsForUser } from "@/lib/server/services/business-service";
 import { getJobDetailsForUser } from "@/lib/server/services/job-service";
 import {
   DocumentUploadError,
@@ -55,15 +55,33 @@ const mockedEnqueueDocumentProcessingJob = vi.mocked(enqueueDocumentProcessingJo
 const mockedGetDriveConnectionForBusiness = vi.mocked(getDriveConnectionForBusiness);
 const mockedUpdateDriveConnectionStatus = vi.mocked(updateDriveConnectionStatus);
 const mockedGetGeneralFoldersForBusiness = vi.mocked(getGeneralFoldersForBusiness);
+const mockedAuthorizeBusinessAccess = vi.mocked(authorizeBusinessAccess);
 const mockedUploadGoogleDriveFile = vi.mocked(uploadGoogleDriveFile);
 const mockedDecryptSecret = vi.mocked(decryptSecret);
-const mockedGetBusinessDetailsForUser = vi.mocked(getBusinessDetailsForUser);
 const mockedGetJobDetailsForUser = vi.mocked(getJobDetailsForUser);
 
 describe("document-upload-service", () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: true,
+      details: {
+        business: {
+          id: "business-1",
+          name: "ABC Landscaping",
+          owner_user_id: "user-1",
+          drive_root_folder_id: "root-1",
+          general_docs_folder_id: "general-root-1",
+          created_at: new Date(),
+          updated_at: new Date()
+        },
+        membership: {
+          role: "reviewer",
+          status: "active"
+        }
+      }
+    });
     mockedGetJobDetailsForUser.mockResolvedValue({
       membership: {
         role: "field_user",
@@ -76,21 +94,6 @@ describe("document-upload-service", () => {
         status: "active"
       }
     } as never);
-    mockedGetBusinessDetailsForUser.mockResolvedValue({
-      business: {
-        id: "business-1",
-        name: "ABC Landscaping",
-        owner_user_id: "user-1",
-        drive_root_folder_id: "root-1",
-        general_docs_folder_id: "general-root-1",
-        created_at: new Date(),
-        updated_at: new Date()
-      },
-      membership: {
-        role: "reviewer",
-        status: "active"
-      }
-    });
     mockedGetDriveConnectionForBusiness.mockResolvedValue({
       id: "connection-1",
       business_id: "business-1",
@@ -216,7 +219,10 @@ describe("document-upload-service", () => {
   });
 
   it("rejects uploads for users outside the business scope", async () => {
-    mockedGetJobDetailsForUser.mockResolvedValue(null);
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: false,
+      details: null
+    });
 
     await expect(
       uploadJobDocument({
@@ -289,19 +295,22 @@ describe("document-upload-service", () => {
   });
 
   it("rejects general uploads for field users", async () => {
-    mockedGetBusinessDetailsForUser.mockResolvedValue({
-      business: {
-        id: "business-1",
-        name: "ABC Landscaping",
-        owner_user_id: "user-1",
-        drive_root_folder_id: "root-1",
-        general_docs_folder_id: "general-root-1",
-        created_at: new Date(),
-        updated_at: new Date()
-      },
-      membership: {
-        role: "field_user",
-        status: "active"
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: false,
+      details: {
+        business: {
+          id: "business-1",
+          name: "ABC Landscaping",
+          owner_user_id: "user-1",
+          drive_root_folder_id: "root-1",
+          general_docs_folder_id: "general-root-1",
+          created_at: new Date(),
+          updated_at: new Date()
+        },
+        membership: {
+          role: "field_user",
+          status: "active"
+        }
       }
     });
 

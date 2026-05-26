@@ -4,16 +4,16 @@ vi.mock("@/lib/server/auth/session", () => ({
   getSession: vi.fn()
 }));
 
-vi.mock("@/lib/server/services/business-service", () => ({
-  getBusinessDetailsForUser: vi.fn()
+vi.mock("@/lib/server/auth/business-authorization", () => ({
+  authorizeBusinessAccess: vi.fn()
 }));
 
 import { GET } from "@/app/api/businesses/[businessId]/route";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { getSession } from "@/lib/server/auth/session";
-import { getBusinessDetailsForUser } from "@/lib/server/services/business-service";
 
+const mockedAuthorizeBusinessAccess = vi.mocked(authorizeBusinessAccess);
 const mockedGetSession = vi.mocked(getSession);
-const mockedGetBusinessDetailsForUser = vi.mocked(getBusinessDetailsForUser);
 
 describe("/api/businesses/[businessId]", () => {
   beforeEach(() => {
@@ -22,19 +22,22 @@ describe("/api/businesses/[businessId]", () => {
 
   it("returns business details for an authorized member", async () => {
     mockedGetSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
-    mockedGetBusinessDetailsForUser.mockResolvedValue({
-      business: {
-        id: "business-1",
-        name: "ABC Landscaping",
-        owner_user_id: "user-1",
-        drive_root_folder_id: null,
-        general_docs_folder_id: null,
-        created_at: new Date("2026-05-21T00:00:00.000Z"),
-        updated_at: new Date("2026-05-21T00:00:00.000Z")
-      },
-      membership: {
-        role: "owner_admin",
-        status: "active"
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: true,
+      details: {
+        business: {
+          id: "business-1",
+          name: "ABC Landscaping",
+          owner_user_id: "user-1",
+          drive_root_folder_id: null,
+          general_docs_folder_id: null,
+          created_at: new Date("2026-05-21T00:00:00.000Z"),
+          updated_at: new Date("2026-05-21T00:00:00.000Z")
+        },
+        membership: {
+          role: "owner_admin",
+          status: "active"
+        }
       }
     });
 
@@ -69,7 +72,10 @@ describe("/api/businesses/[businessId]", () => {
 
   it("rejects access to businesses outside the user's membership scope", async () => {
     mockedGetSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
-    mockedGetBusinessDetailsForUser.mockResolvedValue(null);
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: false,
+      details: null
+    });
 
     const response = await GET(new Request("http://localhost/api/businesses/business-2"), {
       params: Promise.resolve({ businessId: "business-2" })

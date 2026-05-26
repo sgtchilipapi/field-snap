@@ -1,9 +1,9 @@
-import { notFound } from "next/navigation";
 import { InvitationManager } from "@/components/business/invitation-manager";
 import { PageHeader } from "@/components/layout/page-header";
 import { InlineAlert } from "@/components/ui/inline-alert";
+import { redirect } from "next/navigation";
+import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
-import { getBusinessDetailsForUser } from "@/lib/server/services/business-service";
 import { getBusinessDriveStatusForUser } from "@/lib/server/services/drive-service";
 import { listInvitationsForBusinessForOwner } from "@/lib/server/services/invitation-service";
 import Link from "next/link";
@@ -24,12 +24,16 @@ export default async function BusinessSettingsPage({
   const { businessId } = await params;
   const [{ drive, drive_error: driveError, folders, folders_error: foldersError }, details, driveStatus] = await Promise.all([
     searchParams,
-    getBusinessDetailsForUser(businessId, session.userId),
+    requireBusinessPageAccess({
+      businessId,
+      userId: session.userId,
+      capability: "settings:view"
+    }),
     getBusinessDriveStatusForUser(businessId, session.userId)
   ]);
 
-  if (!details || !driveStatus) {
-    notFound();
+  if (!driveStatus) {
+    redirect("/forbidden");
   }
 
   const driveConnected = driveStatus.connected;

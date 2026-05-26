@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { archiveJobAction } from "@/app/(app)/businesses/[businessId]/jobs/[jobId]/actions";
 import { PageHeader } from "@/components/layout/page-header";
+import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
 import { getJobDetailsForUser } from "@/lib/server/services/job-service";
 
@@ -16,6 +17,11 @@ export default async function JobDetailsPage({
 }) {
   const session = await requireSession();
   const { businessId, jobId } = await params;
+  await requireBusinessPageAccess({
+    businessId,
+    userId: session.userId,
+    capability: "jobs:view"
+  });
   const result = await getJobDetailsForUser(businessId, jobId, session.userId);
 
   if (!result || !result.job) {

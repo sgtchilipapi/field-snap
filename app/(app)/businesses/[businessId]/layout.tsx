@@ -1,11 +1,11 @@
-import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { BusinessSwitcher } from "@/components/business/business-switcher";
 import { BusinessNav } from "@/components/business/business-nav";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
-import { getBusinessDetailsForUser, listBusinessesForUser } from "@/lib/server/services/business-service";
+import { listBusinessesForUser } from "@/lib/server/services/business-service";
 
 export default async function BusinessLayout({
   children,
@@ -17,13 +17,13 @@ export default async function BusinessLayout({
   const session = await requireSession();
   const { businessId } = await params;
   const [details, businesses] = await Promise.all([
-    getBusinessDetailsForUser(businessId, session.userId),
+    requireBusinessPageAccess({
+      businessId,
+      userId: session.userId,
+      capability: "business:view"
+    }),
     listBusinessesForUser(session.userId)
   ]);
-
-  if (!details) {
-    notFound();
-  }
 
   return (
     <AppShell

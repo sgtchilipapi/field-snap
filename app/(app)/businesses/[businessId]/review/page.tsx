@@ -1,10 +1,9 @@
-import { notFound } from "next/navigation";
 import { ReviewDocumentList } from "@/components/business/review-document-list";
 import { PageHeader } from "@/components/layout/page-header";
 import { InlineAlert } from "@/components/ui/inline-alert";
+import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
 import {
-  getReviewAccessForUser,
   listBusinessDocumentsForUser,
   listNeedsReviewDocumentsForUser
 } from "@/lib/server/services/review-service";
@@ -20,11 +19,11 @@ export default async function ReviewPage({
   const session = await requireSession();
   const { businessId } = await params;
   const { view: rawView } = await searchParams;
-  const access = await getReviewAccessForUser(businessId, session.userId);
-
-  if (!access) {
-    notFound();
-  }
+  const access = await requireBusinessPageAccess({
+    businessId,
+    userId: session.userId,
+    capability: "review:access"
+  });
 
   const view = parseReviewView(rawView);
   const result =

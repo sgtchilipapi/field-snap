@@ -1,10 +1,10 @@
-import { notFound } from "next/navigation";
 import { NewJobForm } from "@/components/business/new-job-form";
 import { JobList } from "@/components/business/job-list";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { redirect } from "next/navigation";
+import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
-import { getBusinessDetailsForUser } from "@/lib/server/services/business-service";
 import { getCategoriesForBusiness } from "@/lib/server/data/categories";
 import { listJobsForUser } from "@/lib/server/services/job-service";
 
@@ -26,7 +26,11 @@ export default async function BusinessJobsPage({
   const selectedCategoryId = typeof category === "string" && category.trim().length > 0 ? category : "";
   const searchQuery = typeof search === "string" ? search.trim() : "";
   const [details, categories, jobsResult] = await Promise.all([
-    getBusinessDetailsForUser(businessId, session.userId),
+    requireBusinessPageAccess({
+      businessId,
+      userId: session.userId,
+      capability: "jobs:view"
+    }),
     getCategoriesForBusiness(businessId),
     listJobsForUser({
       businessId,
@@ -37,8 +41,8 @@ export default async function BusinessJobsPage({
     })
   ]);
 
-  if (!details || !jobsResult) {
-    notFound();
+  if (!jobsResult) {
+    redirect("/forbidden");
   }
 
   return (

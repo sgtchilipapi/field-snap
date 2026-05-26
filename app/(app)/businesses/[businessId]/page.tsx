@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
+import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
-import {
-  getBusinessDetailsForUser,
-  getBusinessLandingPath
-} from "@/lib/server/services/business-service";
+import { getBusinessLandingPath } from "@/lib/server/services/business-service";
 
 export default async function BusinessIndexPage({
   params
@@ -12,11 +10,11 @@ export default async function BusinessIndexPage({
 }) {
   const session = await requireSession();
   const { businessId } = await params;
-  const details = await getBusinessDetailsForUser(businessId, session.userId);
-
-  if (!details) {
-    redirect("/businesses");
-  }
+  const details = await requireBusinessPageAccess({
+    businessId,
+    userId: session.userId,
+    capability: "business:view"
+  });
 
   redirect(
     getBusinessLandingPath({

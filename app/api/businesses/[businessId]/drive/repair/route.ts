@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { getSession } from "@/lib/server/auth/session";
 import { logError } from "@/lib/server/logger";
-import { getBusinessOwnerDetailsForUser } from "@/lib/server/services/business-service";
 import { ensureBusinessFolderTemplate } from "@/lib/server/services/folder-template-service";
 
 function unauthorized() {
@@ -23,9 +23,13 @@ export async function POST(
   }
 
   const { businessId } = await context.params;
-  const details = await getBusinessOwnerDetailsForUser(businessId, session.userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId,
+    userId: session.userId,
+    capability: "drive:manage"
+  });
 
-  if (!details) {
+  if (!authorization.allowed) {
     return forbidden();
   }
 

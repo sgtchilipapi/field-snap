@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { createAuditLog, listAuditLogsForEntity } from "@/lib/server/audit/logs";
 import { AuthFlowError } from "@/lib/server/auth/errors";
 import { JOB_FOLDER_TEMPLATES, GENERAL_FOLDER_TEMPLATES } from "@/lib/server/constants/folder-template";
@@ -11,12 +12,9 @@ import {
 import { getGeneralFoldersForBusiness } from "@/lib/server/data/general-folders";
 import { listJobFolders } from "@/lib/server/data/job-folders";
 import { getJobForBusiness, listJobsForBusiness } from "@/lib/server/data/jobs";
-import type { BusinessMembershipRow, DocumentRow } from "@/lib/server/db/schema";
+import type { DocumentRow } from "@/lib/server/db/schema";
 import { getGoogleDriveFileBytes, moveGoogleDriveFile } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
-import { getBusinessDetailsForUser } from "@/lib/server/services/business-service";
-
-const REVIEW_ALLOWED_ROLES = new Set<BusinessMembershipRow["role"]>(["owner_admin", "reviewer"]);
 const ALLOWED_DOCUMENT_STATUS_FILTERS = new Set<DocumentRow["status"]>([
   "uploaded_to_in_process",
   "ai_processing",
@@ -63,18 +61,18 @@ const markReviewedSchema = z.object({
   mark_reviewed: z.literal(true)
 });
 
-function canAccessReview(role: BusinessMembershipRow["role"], status: BusinessMembershipRow["status"]) {
-  return status === "active" && REVIEW_ALLOWED_ROLES.has(role);
-}
-
 async function requireReviewAccess(businessId: string, userId: string) {
-  const details = await getBusinessDetailsForUser(businessId, userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId,
+    userId,
+    capability: "review:access"
+  });
 
-  if (!details || !canAccessReview(details.membership.role, details.membership.status)) {
+  if (!authorization.allowed) {
     throw new ReviewServiceError("Forbidden", "forbidden");
   }
 
-  return details;
+  return authorization.details;
 }
 
 async function requireDriveAccessForBusiness(businessId: string) {
@@ -102,13 +100,17 @@ function normalizeStatusFilter(status: string | null | undefined) {
 }
 
 export async function getReviewAccessForUser(businessId: string, userId: string) {
-  const details = await getBusinessDetailsForUser(businessId, userId);
+  const authorization = await authorizeBusinessAccess({
+    businessId,
+    userId,
+    capability: "review:access"
+  });
 
-  if (!details || !canAccessReview(details.membership.role, details.membership.status)) {
+  if (!authorization.allowed) {
     return null;
   }
 
-  return details;
+  return authorization.details;
 }
 
 function normalizeNullableText(value: string | null | undefined) {

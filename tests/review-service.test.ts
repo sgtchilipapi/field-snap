@@ -25,6 +25,10 @@ vi.mock("@/lib/server/data/job-folders", () => ({
   listJobFolders: vi.fn()
 }));
 
+vi.mock("@/lib/server/auth/business-authorization", () => ({
+  authorizeBusinessAccess: vi.fn()
+}));
+
 vi.mock("@/lib/server/data/jobs", () => ({
   getJobForBusiness: vi.fn(),
   listJobsForBusiness: vi.fn()
@@ -39,11 +43,8 @@ vi.mock("@/lib/server/security/encryption", () => ({
   decryptSecret: vi.fn()
 }));
 
-vi.mock("@/lib/server/services/business-service", () => ({
-  getBusinessDetailsForUser: vi.fn()
-}));
-
 import { createAuditLog, listAuditLogsForEntity } from "@/lib/server/audit/logs";
+import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { getDriveConnectionForBusiness } from "@/lib/server/data/drive-connections";
 import { getDocumentForBusiness, updateDocumentReviewFields } from "@/lib/server/data/documents";
 import { getGeneralFoldersForBusiness } from "@/lib/server/data/general-folders";
@@ -51,7 +52,6 @@ import { listJobFolders } from "@/lib/server/data/job-folders";
 import { getJobForBusiness, listJobsForBusiness } from "@/lib/server/data/jobs";
 import { moveGoogleDriveFile } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
-import { getBusinessDetailsForUser } from "@/lib/server/services/business-service";
 import {
   ReviewServiceError,
   markDocumentReviewedForUser,
@@ -67,22 +67,25 @@ const mockedGetGeneralFoldersForBusiness = vi.mocked(getGeneralFoldersForBusines
 const mockedListJobFolders = vi.mocked(listJobFolders);
 const mockedGetJobForBusiness = vi.mocked(getJobForBusiness);
 const mockedListJobsForBusiness = vi.mocked(listJobsForBusiness);
+const mockedAuthorizeBusinessAccess = vi.mocked(authorizeBusinessAccess);
 const mockedMoveGoogleDriveFile = vi.mocked(moveGoogleDriveFile);
 const mockedDecryptSecret = vi.mocked(decryptSecret);
-const mockedGetBusinessDetailsForUser = vi.mocked(getBusinessDetailsForUser);
 
 describe("review-service", () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
-    mockedGetBusinessDetailsForUser.mockResolvedValue({
-      business: {
-        id: "business-1",
-        name: "ABC Landscaping"
-      },
-      membership: {
-        role: "reviewer",
-        status: "active"
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: true,
+      details: {
+        business: {
+          id: "business-1",
+          name: "ABC Landscaping"
+        },
+        membership: {
+          role: "reviewer",
+          status: "active"
+        }
       }
     } as never);
     mockedGetDocumentForBusiness.mockResolvedValue({
