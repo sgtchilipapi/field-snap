@@ -10,7 +10,7 @@ import {
   updateDocumentAiFields,
   updateDocumentProcessingState
 } from "@/lib/server/data/documents";
-import { getDriveConnectionForBusiness, updateDriveConnectionStatus } from "@/lib/server/data/drive-connections";
+import { getDriveConnectionForBusiness } from "@/lib/server/data/drive-connections";
 import { getGeneralFoldersForBusiness } from "@/lib/server/data/general-folders";
 import { listJobFolders } from "@/lib/server/data/job-folders";
 import { getJobForBusiness } from "@/lib/server/data/jobs";
@@ -24,9 +24,10 @@ import {
   moveGoogleDriveFile,
   renameGoogleDriveFile
 } from "@/lib/server/integrations/google/drive";
-import { logError } from "@/lib/server/logger";
+import { logError, logInfo, logWarn } from "@/lib/server/logger";
 import { decryptSecret } from "@/lib/server/security/encryption";
 import { getBusinessById } from "@/lib/server/data/businesses";
+import { markDriveConnectionIssue } from "@/lib/server/services/drive-connection-health";
 
 const AUTO_FILE_CONFIDENCE_THRESHOLD = 0.95;
 const MAX_FILENAME_LENGTH = 120;
@@ -175,9 +176,7 @@ async function loadDocumentContext(documentId: string) {
 }
 
 async function markDriveConnectionErrorIfNeeded(businessId: string, error: unknown) {
-  if (error instanceof AuthFlowError) {
-    await updateDriveConnectionStatus(businessId, "error");
-  }
+  await markDriveConnectionIssue(businessId, error, { businessId });
 }
 
 async function recordRoutingAudit(input: {
@@ -273,7 +272,7 @@ async function finalizeFailedProcessing(input: {
   document: DocumentRow;
   actorUserId: string | null;
   accessToken: string;
-  failureReason: "ai_error" | "drive_move_error";
+  failureReason: "ai_error" | "drive_move_error" | "missing_folder_mapping";
   needsReviewFolderId: string;
   correlationId: string;
   attemptNeedsReviewMove: boolean;
@@ -307,7 +306,8 @@ async function finalizeFailedProcessing(input: {
     } catch (error) {
       logError("Failed to move document to Needs Review after processing failure", error, {
         documentId: input.document.id,
-        correlationId: input.correlationId
+        correlationId: input.correlationId,
+        businessId: input.document.business_id
       });
       await markDriveConnectionErrorIfNeeded(input.document.business_id, error);
     }
@@ -361,6 +361,22 @@ export async function processDocumentProcessingJob(
       }
     });
 
+    if (!classification.valid) {
+      logWarn("AI invalid response", {
+        businessId: context.business.id,
+        documentId: context.document.id,
+        correlationId: input.correlationId
+      });
+    } else {
+      logInfo("AI classification succeeded", {
+        businessId: context.business.id,
+        documentId: context.document.id,
+        correlationId: input.correlationId,
+        targetFolderKey: classification.target_folder_key,
+        confidence: classification.confidence
+      });
+    }
+
     const targetFolder = context.allowedFolders.find(
       (folder) => folder.key === classification.target_folder_key
     );
@@ -390,6 +406,11 @@ export async function processDocumentProcessingJob(
         toFolderId: destinationFolderId
       });
     } catch (error) {
+      logWarn("Drive move failed", {
+        businessId: context.business.id,
+        documentId: context.document.id,
+        correlationId: input.correlationId
+      });
       throw new DriveMoveError(error instanceof Error ? error.message : "Drive move failed.");
     }
 
@@ -462,6 +483,13 @@ export async function processDocumentProcessingJob(
       });
     }
 
+    logInfo("Document routing completed", {
+      businessId: context.business.id,
+      documentId: context.document.id,
+      correlationId: input.correlationId,
+      status: nextStatus
+    });
+
     return {
       status: nextStatus
     };
@@ -478,6 +506,15 @@ export async function processDocumentProcessingJob(
         : error instanceof Error && error.message.includes("file move")
           ? "drive_move_error"
           : "ai_error";
+
+    logWarn(
+      failureReason === "drive_move_error" ? "Drive move failed" : "AI classification failed",
+      {
+        businessId: context.business.id,
+        documentId: context.document.id,
+        correlationId: input.correlationId
+      }
+    );
 
     await finalizeFailedProcessing({
       document: context.document,
@@ -501,6 +538,31 @@ export async function processDocumentProcessingJob(
       status: "failed" as const
     };
   }
+}
+
+async function settleUnrecoverableDocumentFailure(input: {
+  documentId: string;
+  queueJobId: string;
+  correlationId: string;
+}) {
+  const document = await getDocumentById(input.documentId);
+
+  if (!document) {
+    return;
+  }
+
+  await updateDocumentProcessingState({
+    documentId: input.documentId,
+    status: "failed",
+    failureReason: "missing_folder_mapping"
+  });
+
+  logWarn("Document processing settled after unrecoverable worker failure", {
+    businessId: document.business_id,
+    documentId: input.documentId,
+    queueJobId: input.queueJobId,
+    correlationId: input.correlationId
+  });
 }
 
 export async function runNextDocumentProcessingJob(provider: AIProvider = new GeminiAIProvider()) {
@@ -533,6 +595,7 @@ export async function runNextDocumentProcessingJob(provider: AIProvider = new Ge
     };
   } catch (error) {
     logError("Document processing job failed", error, {
+      queueJobId: job.id,
       documentId: job.document_id,
       correlationId: job.correlation_id,
       attempts: job.attempts
@@ -547,6 +610,12 @@ export async function runNextDocumentProcessingJob(provider: AIProvider = new Ge
         status: "retried" as const
       };
     }
+
+    await settleUnrecoverableDocumentFailure({
+      documentId: job.document_id,
+      queueJobId: job.id,
+      correlationId: job.correlation_id
+    });
 
     await failDocumentProcessingJob(job.id);
 

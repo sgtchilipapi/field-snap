@@ -17,8 +17,7 @@ vi.mock("@/lib/server/audit/logs", () => ({
 }));
 
 vi.mock("@/lib/server/data/drive-connections", () => ({
-  getDriveConnectionForBusiness: vi.fn(),
-  updateDriveConnectionStatus: vi.fn()
+  getDriveConnectionForBusiness: vi.fn()
 }));
 
 vi.mock("@/lib/server/data/job-folders", () => ({
@@ -47,6 +46,10 @@ vi.mock("@/lib/server/integrations/google/drive", () => ({
   createGoogleDriveFolderInParent: vi.fn()
 }));
 
+vi.mock("@/lib/server/services/drive-connection-health", () => ({
+  markDriveConnectionIssue: vi.fn()
+}));
+
 import {
   findCategoryForBusinessByName,
   findCategoryForBusinessBySlug,
@@ -54,12 +57,13 @@ import {
   upsertCategory
 } from "@/lib/server/data/categories";
 import { recordAuditEvent } from "@/lib/server/audit/logs";
-import { getDriveConnectionForBusiness, updateDriveConnectionStatus } from "@/lib/server/data/drive-connections";
+import { getDriveConnectionForBusiness } from "@/lib/server/data/drive-connections";
 import { createJobFolder } from "@/lib/server/data/job-folders";
 import { createJob, findActiveDuplicateJob, getJobForBusiness, updateJob } from "@/lib/server/data/jobs";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { createGoogleDriveFolderInParent } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
+import { markDriveConnectionIssue } from "@/lib/server/services/drive-connection-health";
 import { JobServiceError, createJobForBusiness, updateJobForBusiness } from "@/lib/server/services/job-service";
 
 const mockedFindCategoryForBusinessByName = vi.mocked(findCategoryForBusinessByName);
@@ -68,7 +72,6 @@ const mockedFindCategoryForBusinessBySlug = vi.mocked(findCategoryForBusinessByS
 const mockedGetCategoryForBusiness = vi.mocked(getCategoryForBusiness);
 const mockedUpsertCategory = vi.mocked(upsertCategory);
 const mockedGetDriveConnectionForBusiness = vi.mocked(getDriveConnectionForBusiness);
-const mockedUpdateDriveConnectionStatus = vi.mocked(updateDriveConnectionStatus);
 const mockedCreateJobFolder = vi.mocked(createJobFolder);
 const mockedCreateJob = vi.mocked(createJob);
 const mockedFindActiveDuplicateJob = vi.mocked(findActiveDuplicateJob);
@@ -77,6 +80,7 @@ const mockedUpdateJob = vi.mocked(updateJob);
 const mockedAuthorizeBusinessAccess = vi.mocked(authorizeBusinessAccess);
 const mockedCreateGoogleDriveFolderInParent = vi.mocked(createGoogleDriveFolderInParent);
 const mockedDecryptSecret = vi.mocked(decryptSecret);
+const mockedMarkDriveConnectionIssue = vi.mocked(markDriveConnectionIssue);
 const categoryId = "11111111-1111-1111-8111-111111111111";
 
 describe("job-service", () => {
@@ -284,7 +288,7 @@ describe("job-service", () => {
     ).rejects.toBeInstanceOf(ZodError);
   });
 
-  it("marks the drive connection as error when folder creation fails", async () => {
+  it("marks the drive connection issue when folder creation fails", async () => {
     mockedCreateGoogleDriveFolderInParent.mockRejectedValue(new Error("drive failed"));
 
     await expect(
@@ -300,7 +304,14 @@ describe("job-service", () => {
       })
     ).rejects.toThrow("drive failed");
 
-    expect(mockedUpdateDriveConnectionStatus).toHaveBeenCalledWith("business-1", "error");
+    expect(mockedMarkDriveConnectionIssue).toHaveBeenCalledWith(
+      "business-1",
+      expect.any(Error),
+      expect.objectContaining({
+        businessId: "business-1",
+        userId: "user-1"
+      })
+    );
   });
 
   it("updates job metadata for owner-admin users", async () => {

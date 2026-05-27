@@ -4,6 +4,20 @@ vi.mock("@/lib/server/auth/session", () => ({
   getSession: vi.fn()
 }));
 
+vi.mock("@/lib/server/security/rate-limit", () => ({
+  consumeRateLimit: vi.fn(() => ({
+    allowed: true,
+    remaining: 19,
+    retryAfterSeconds: 60
+  })),
+  getClientAddress: vi.fn(() => "127.0.0.1")
+}));
+
+vi.mock("@/lib/server/logger", () => ({
+  getRequestContext: vi.fn(() => ({ requestId: "req-1" })),
+  logWarn: vi.fn()
+}));
+
 vi.mock("@/lib/server/services/document-upload-service", () => ({
   DocumentUploadError: class extends Error {
     code: string;
@@ -18,12 +32,14 @@ vi.mock("@/lib/server/services/document-upload-service", () => ({
 
 import { POST } from "@/app/api/businesses/[businessId]/documents/upload-general/route";
 import { getSession } from "@/lib/server/auth/session";
+import { consumeRateLimit } from "@/lib/server/security/rate-limit";
 import {
   DocumentUploadError,
   uploadGeneralDocument
 } from "@/lib/server/services/document-upload-service";
 
 const mockedGetSession = vi.mocked(getSession);
+const mockedConsumeRateLimit = vi.mocked(consumeRateLimit);
 const mockedUploadGeneralDocument = vi.mocked(uploadGeneralDocument);
 
 describe("/api/businesses/[businessId]/documents/upload-general", () => {
@@ -98,6 +114,27 @@ describe("/api/businesses/[businessId]/documents/upload-general", () => {
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({
       error: "Forbidden"
+    });
+  });
+
+  it("rate limits repeated general uploads", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
+    mockedConsumeRateLimit.mockReturnValue({
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: 60
+    });
+
+    const formData = new FormData();
+    formData.set("file", new File(["image"], "insurance.jpg", { type: "image/jpeg" }));
+
+    const response = await POST(createMultipartRequest(formData), {
+      params: Promise.resolve({ businessId: "business-1" })
+    });
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toEqual({
+      error: "Too many uploads. Please wait and try again."
     });
   });
 });

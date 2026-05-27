@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { AUDIT_ACTIONS, recordAuditEvent, listAuditLogsForEntity } from "@/lib/server/audit/logs";
-import { AuthFlowError } from "@/lib/server/auth/errors";
 import { JOB_FOLDER_TEMPLATES, GENERAL_FOLDER_TEMPLATES } from "@/lib/server/constants/folder-template";
-import { getDriveConnectionForBusiness, updateDriveConnectionStatus } from "@/lib/server/data/drive-connections";
+import { getDriveConnectionForBusiness } from "@/lib/server/data/drive-connections";
 import {
   getDocumentForBusiness,
   listDocumentsForBusiness,
@@ -15,6 +14,8 @@ import { getJobForBusiness, listJobsForBusiness } from "@/lib/server/data/jobs";
 import type { DocumentRow } from "@/lib/server/db/schema";
 import { getGoogleDriveFileBytes, moveGoogleDriveFile } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
+import { logInfo } from "@/lib/server/logger";
+import { markDriveConnectionIssue } from "@/lib/server/services/drive-connection-health";
 const ALLOWED_DOCUMENT_STATUS_FILTERS = new Set<DocumentRow["status"]>([
   "uploaded_to_in_process",
   "ai_processing",
@@ -297,18 +298,18 @@ export async function getDocumentPreviewForUser(input: {
       bytes: file.bytes
     };
   } catch (error) {
-    if (error instanceof AuthFlowError) {
-      await updateDriveConnectionStatus(input.businessId, "error");
-    }
+    await markDriveConnectionIssue(input.businessId, error, {
+      businessId: input.businessId,
+      userId: input.userId,
+      documentId: input.documentId
+    });
 
     throw new ReviewServiceError("Document preview is temporarily unavailable.", "drive_unavailable");
   }
 }
 
 async function updateDriveConnectionStatusIfNeeded(businessId: string, error: unknown) {
-  if (error instanceof AuthFlowError) {
-    await updateDriveConnectionStatus(businessId, "error");
-  }
+  await markDriveConnectionIssue(businessId, error, { businessId });
 }
 
 export async function patchDocumentForReview(input: {
@@ -462,6 +463,13 @@ export async function patchDocumentForReview(input: {
       }
     });
   }
+
+  logInfo("Review correction succeeded", {
+    businessId: input.businessId,
+    userId: input.userId,
+    documentId: input.documentId,
+    markReviewed: Boolean(parsed.mark_reviewed)
+  });
 
   return getDocumentDetailForUser({
     businessId: input.businessId,

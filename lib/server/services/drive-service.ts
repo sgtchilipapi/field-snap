@@ -5,7 +5,6 @@ import {
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import {
   getDriveConnectionForBusiness,
-  updateDriveConnectionStatus,
   upsertDriveConnection
 } from "@/lib/server/data/drive-connections";
 import {
@@ -15,7 +14,9 @@ import {
   getGoogleDriveFolder,
   type GoogleDriveTokens
 } from "@/lib/server/integrations/google/drive";
+import { logInfo } from "@/lib/server/logger";
 import { encryptSecret } from "@/lib/server/security/encryption";
+import { markDriveConnectionIssue } from "@/lib/server/services/drive-connection-health";
 
 export type BusinessDriveStatus = {
   connected: boolean;
@@ -159,13 +160,22 @@ export async function connectBusinessDriveFromCode(input: {
       }
     });
 
+    logInfo("Drive connection refreshed", {
+      businessId: input.businessId,
+      userId: input.connectedByUserId,
+      rootFolderId,
+      googleAccountEmail
+    });
+
     return {
       rootFolderId,
       googleAccountEmail
     };
   } catch (error) {
     if (existingConnection) {
-      await updateDriveConnectionStatus(input.businessId, "error");
+      await markDriveConnectionIssue(input.businessId, error, {
+        userId: input.connectedByUserId
+      });
     }
 
     throw error;

@@ -2,6 +2,8 @@ import { ZodError } from "zod";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/server/auth/session";
 import { env } from "@/lib/server/env";
+import { getRequestContext, logWarn } from "@/lib/server/logger";
+import { consumeRateLimit, getClientAddress } from "@/lib/server/security/rate-limit";
 import { InvitationServiceError, createInvitationForBusiness } from "@/lib/server/services/invitation-service";
 
 function unauthorized() {
@@ -23,6 +25,29 @@ export async function POST(
   }
 
   const { businessId } = await context.params;
+  const requestContext = getRequestContext(request, {
+    businessId,
+    userId: session.userId
+  });
+  const rateLimit = consumeRateLimit({
+    bucket: "invitation-create",
+    key: `${businessId}:${session.userId}:${getClientAddress(request)}`,
+    limit: 10,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (!rateLimit.allowed) {
+    logWarn("Invitation creation rate limited", requestContext);
+    return NextResponse.json(
+      { error: "Too many invitations created. Please wait and try again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds)
+        }
+      }
+    );
+  }
 
   try {
     const body = await request.json();

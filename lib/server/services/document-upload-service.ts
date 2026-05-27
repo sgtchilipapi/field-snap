@@ -1,12 +1,13 @@
 import { AUDIT_ACTIONS, recordAuditEvent } from "@/lib/server/audit/logs";
 import { createDocument } from "@/lib/server/data/documents";
 import { enqueueDocumentProcessingJob } from "@/lib/server/data/document-processing-jobs";
-import { getDriveConnectionForBusiness, updateDriveConnectionStatus } from "@/lib/server/data/drive-connections";
+import { getDriveConnectionForBusiness } from "@/lib/server/data/drive-connections";
 import { getGeneralFoldersForBusiness } from "@/lib/server/data/general-folders";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
-import { AuthFlowError } from "@/lib/server/auth/errors";
 import { uploadGoogleDriveFile } from "@/lib/server/integrations/google/drive";
+import { logInfo, logWarn } from "@/lib/server/logger";
 import { decryptSecret } from "@/lib/server/security/encryption";
+import { markDriveConnectionIssue } from "@/lib/server/services/drive-connection-health";
 import { getJobDetailsForUser } from "@/lib/server/services/job-service";
 
 const MAX_UPLOAD_SIZE_BYTES = 15 * 1024 * 1024;
@@ -116,9 +117,15 @@ export async function uploadJobDocument(input: {
       bytes
     });
   } catch (error) {
-    if (error instanceof AuthFlowError) {
-      await updateDriveConnectionStatus(input.businessId, "error");
-    }
+    await markDriveConnectionIssue(input.businessId, error, {
+      businessId: input.businessId,
+      userId: input.userId
+    });
+    logWarn("Document upload failed", {
+      businessId: input.businessId,
+      userId: input.userId,
+      jobId: input.jobId
+    });
 
     throw error;
   }
@@ -156,6 +163,13 @@ export async function uploadJobDocument(input: {
       filename: document.current_filename,
       status: document.status
     }
+  });
+
+  logInfo("Document upload succeeded", {
+    businessId: input.businessId,
+    userId: input.userId,
+    documentId: document.id,
+    jobId: input.jobId
   });
 
   return {
@@ -205,9 +219,15 @@ export async function uploadGeneralDocument(input: {
       bytes
     });
   } catch (error) {
-    if (error instanceof AuthFlowError) {
-      await updateDriveConnectionStatus(input.businessId, "error");
-    }
+    await markDriveConnectionIssue(input.businessId, error, {
+      businessId: input.businessId,
+      userId: input.userId
+    });
+    logWarn("Document upload failed", {
+      businessId: input.businessId,
+      userId: input.userId,
+      captureContext: "general"
+    });
 
     throw error;
   }
@@ -245,6 +265,13 @@ export async function uploadGeneralDocument(input: {
       filename: document.current_filename,
       status: document.status
     }
+  });
+
+  logInfo("Document upload succeeded", {
+    businessId: input.businessId,
+    userId: input.userId,
+    documentId: document.id,
+    captureContext: "general"
   });
 
   return {

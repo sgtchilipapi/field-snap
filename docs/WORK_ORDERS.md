@@ -718,6 +718,10 @@ Acceptance
 
 ## WO-17 — Production hardening
 
+Status
+
+`done`
+
 Goal
 
 Make the MVP resilient enough to operate in production without hiding failures or creating silent data loss.

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/server/auth/session";
+import { getRequestContext, logWarn } from "@/lib/server/logger";
+import { consumeRateLimit, getClientAddress } from "@/lib/server/security/rate-limit";
 import {
   DocumentUploadError,
   getMaxUploadSizeBytes,
@@ -43,6 +45,32 @@ export async function POST(
   }
 
   const { businessId, jobId } = await context.params;
+  const requestContext = getRequestContext(request, {
+    businessId,
+    userId: session.userId
+  });
+  const rateLimit = consumeRateLimit({
+    bucket: "job-document-upload",
+    key: `${businessId}:${session.userId}:${getClientAddress(request)}`,
+    limit: 20,
+    windowMs: 60 * 1000
+  });
+
+  if (!rateLimit.allowed) {
+    logWarn("Document upload rate limited", {
+      ...requestContext,
+      jobId
+    });
+    return NextResponse.json(
+      { error: "Too many uploads. Please wait and try again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds)
+        }
+      }
+    );
+  }
 
   try {
     const result = await uploadJobDocument({

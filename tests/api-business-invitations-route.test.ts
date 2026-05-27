@@ -5,6 +5,20 @@ vi.mock("@/lib/server/auth/session", () => ({
   getSession: vi.fn()
 }));
 
+vi.mock("@/lib/server/security/rate-limit", () => ({
+  consumeRateLimit: vi.fn(() => ({
+    allowed: true,
+    remaining: 9,
+    retryAfterSeconds: 600
+  })),
+  getClientAddress: vi.fn(() => "127.0.0.1")
+}));
+
+vi.mock("@/lib/server/logger", () => ({
+  getRequestContext: vi.fn(() => ({ requestId: "req-1" })),
+  logWarn: vi.fn()
+}));
+
 vi.mock("@/lib/server/services/invitation-service", () => ({
   InvitationServiceError: class extends Error {
     code: string;
@@ -18,12 +32,14 @@ vi.mock("@/lib/server/services/invitation-service", () => ({
 
 import { POST } from "@/app/api/businesses/[businessId]/invitations/route";
 import { getSession } from "@/lib/server/auth/session";
+import { consumeRateLimit } from "@/lib/server/security/rate-limit";
 import {
   InvitationServiceError,
   createInvitationForBusiness
 } from "@/lib/server/services/invitation-service";
 
 const mockedGetSession = vi.mocked(getSession);
+const mockedConsumeRateLimit = vi.mocked(consumeRateLimit);
 const mockedCreateInvitationForBusiness = vi.mocked(createInvitationForBusiness);
 
 describe("/api/businesses/[businessId]/invitations", () => {
@@ -141,6 +157,36 @@ describe("/api/businesses/[businessId]/invitations", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "Invitation email must be valid."
+    });
+  });
+
+  it("rate limits invitation creation", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "owner-1", issuedAt: 1 });
+    mockedConsumeRateLimit.mockReturnValue({
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: 600
+    });
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          invited_email: "crew@example.com",
+          role: "field_user"
+        })
+      }),
+      {
+        params: Promise.resolve({ businessId: "business-1" })
+      }
+    );
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toEqual({
+      error: "Too many invitations created. Please wait and try again."
     });
   });
 });

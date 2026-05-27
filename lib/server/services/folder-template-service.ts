@@ -12,10 +12,7 @@ import {
   getCategoriesForBusiness,
   upsertCategory
 } from "@/lib/server/data/categories";
-import {
-  getDriveConnectionForBusiness,
-  updateDriveConnectionStatus
-} from "@/lib/server/data/drive-connections";
+import { getDriveConnectionForBusiness } from "@/lib/server/data/drive-connections";
 import {
   getGeneralFoldersForBusiness,
   upsertGeneralFolder
@@ -27,6 +24,7 @@ import {
   findGoogleDriveFolderByName,
   getGoogleDriveFolder
 } from "@/lib/server/integrations/google/drive";
+import { markDriveConnectionIssue } from "@/lib/server/services/drive-connection-health";
 
 async function ensureFolder(input: {
   accessToken: string;
@@ -145,7 +143,9 @@ export async function ensureBusinessFolderTemplate(businessId: string) {
       })
     );
   } catch (error) {
-    await updateDriveConnectionStatus(businessId, "error");
+    await markDriveConnectionIssue(businessId, error, {
+      businessId
+    });
     throw error;
   }
 }

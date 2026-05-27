@@ -10,7 +10,6 @@ import {
 } from "@/lib/server/data/categories";
 import {
   getDriveConnectionForBusiness,
-  updateDriveConnectionStatus
 } from "@/lib/server/data/drive-connections";
 import { createJobFolder, listJobFolders } from "@/lib/server/data/job-folders";
 import {
@@ -21,11 +20,10 @@ import {
   listJobsForBusiness,
   updateJob as updateJobRecord
 } from "@/lib/server/data/jobs";
-import {
-} from "@/lib/server/services/business-service";
 import { decryptSecret } from "@/lib/server/security/encryption";
 import { createGoogleDriveFolderInParent } from "@/lib/server/integrations/google/drive";
 import type { CategoryRow } from "@/lib/server/db/schema";
+import { markDriveConnectionIssue } from "@/lib/server/services/drive-connection-health";
 
 const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Job date must use YYYY-MM-DD.");
 
@@ -282,7 +280,10 @@ export async function createJobForBusiness(input: {
       folderName
     };
   } catch (error) {
-    await updateDriveConnectionStatus(input.businessId, "error");
+    await markDriveConnectionIssue(input.businessId, error, {
+      businessId: input.businessId,
+      userId: input.userId
+    });
     throw error;
   }
 }

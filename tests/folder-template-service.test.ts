@@ -12,8 +12,7 @@ vi.mock("@/lib/server/data/categories", () => ({
 }));
 
 vi.mock("@/lib/server/data/drive-connections", () => ({
-  getDriveConnectionForBusiness: vi.fn(),
-  updateDriveConnectionStatus: vi.fn()
+  getDriveConnectionForBusiness: vi.fn()
 }));
 
 vi.mock("@/lib/server/data/general-folders", () => ({
@@ -32,19 +31,21 @@ vi.mock("@/lib/server/integrations/google/drive", () => ({
   getGoogleDriveFolder: vi.fn()
 }));
 
+vi.mock("@/lib/server/services/drive-connection-health", () => ({
+  markDriveConnectionIssue: vi.fn()
+}));
+
 import { DEFAULT_CATEGORIES, GENERAL_FOLDER_TEMPLATES } from "@/lib/server/constants/folder-template";
 import {
   getBusinessById,
   updateBusinessGeneralDocsFolder
 } from "@/lib/server/data/businesses";
 import { getCategoriesForBusiness, upsertCategory } from "@/lib/server/data/categories";
-import {
-  getDriveConnectionForBusiness,
-  updateDriveConnectionStatus
-} from "@/lib/server/data/drive-connections";
+import { getDriveConnectionForBusiness } from "@/lib/server/data/drive-connections";
 import { getGeneralFoldersForBusiness, upsertGeneralFolder } from "@/lib/server/data/general-folders";
 import { createGoogleDriveFolderInParent, findGoogleDriveFolderByName, getGoogleDriveFolder } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
+import { markDriveConnectionIssue } from "@/lib/server/services/drive-connection-health";
 import { ensureBusinessFolderTemplate } from "@/lib/server/services/folder-template-service";
 
 const mockedGetBusinessById = vi.mocked(getBusinessById);
@@ -52,13 +53,13 @@ const mockedUpdateBusinessGeneralDocsFolder = vi.mocked(updateBusinessGeneralDoc
 const mockedGetCategoriesForBusiness = vi.mocked(getCategoriesForBusiness);
 const mockedUpsertCategory = vi.mocked(upsertCategory);
 const mockedGetDriveConnectionForBusiness = vi.mocked(getDriveConnectionForBusiness);
-const mockedUpdateDriveConnectionStatus = vi.mocked(updateDriveConnectionStatus);
 const mockedGetGeneralFoldersForBusiness = vi.mocked(getGeneralFoldersForBusiness);
 const mockedUpsertGeneralFolder = vi.mocked(upsertGeneralFolder);
 const mockedCreateGoogleDriveFolderInParent = vi.mocked(createGoogleDriveFolderInParent);
 const mockedFindGoogleDriveFolderByName = vi.mocked(findGoogleDriveFolderByName);
 const mockedGetGoogleDriveFolder = vi.mocked(getGoogleDriveFolder);
 const mockedDecryptSecret = vi.mocked(decryptSecret);
+const mockedMarkDriveConnectionIssue = vi.mocked(markDriveConnectionIssue);
 
 describe("folder-template-service", () => {
   beforeEach(() => {
@@ -162,11 +163,17 @@ describe("folder-template-service", () => {
     );
   });
 
-  it("marks the drive connection as error when template creation fails", async () => {
+  it("marks the drive connection issue when template creation fails", async () => {
     mockedCreateGoogleDriveFolderInParent.mockRejectedValue(new Error("drive failed"));
 
     await expect(ensureBusinessFolderTemplate("business-1")).rejects.toThrow("drive failed");
 
-    expect(mockedUpdateDriveConnectionStatus).toHaveBeenCalledWith("business-1", "error");
+    expect(mockedMarkDriveConnectionIssue).toHaveBeenCalledWith(
+      "business-1",
+      expect.any(Error),
+      expect.objectContaining({
+        businessId: "business-1"
+      })
+    );
   });
 });

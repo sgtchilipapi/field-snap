@@ -46,6 +46,13 @@ export function getGoogleDriveCallbackUrl() {
   return new URL("/auth/google/drive/callback", env.APP_BASE_URL).toString();
 }
 
+function createGoogleDriveApiError(response: Response, action: string) {
+  return new AuthFlowError(
+    response.status === 401 || response.status === 403 ? "access_denied" : "callback_failed",
+    `Google Drive ${action} failed: ${response.status} ${response.statusText}`
+  );
+}
+
 async function parseJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
@@ -106,10 +113,7 @@ export async function fetchGoogleDriveAccountEmail(accessToken: string) {
   const payload = await parseJson<GoogleDriveUserInfoResponse>(response);
 
   if (!response.ok || !payload.email) {
-    throw new AuthFlowError(
-      "callback_failed",
-      `Google account email fetch failed: ${response.status} ${response.statusText}`
-    );
+    throw createGoogleDriveApiError(response, "account email fetch");
   }
 
   return payload.email;
@@ -130,10 +134,7 @@ export async function getGoogleDriveFolder(accessToken: string, folderId: string
   }
 
   if (!response.ok) {
-    throw new AuthFlowError(
-      "callback_failed",
-      `Google Drive folder lookup failed: ${response.status} ${response.statusText}`
-    );
+    throw createGoogleDriveApiError(response, "folder lookup");
   }
 
   const payload = await parseJson<GoogleDriveFileResponse & { mimeType?: string }>(response);
@@ -173,10 +174,7 @@ export async function createGoogleDriveFolderInParent(
   const payload = await parseJson<GoogleDriveFileResponse>(response);
 
   if (!response.ok || !payload.id || !payload.name) {
-    throw new AuthFlowError(
-      "callback_failed",
-      `Google Drive folder creation failed: ${response.status} ${response.statusText}`
-    );
+    throw createGoogleDriveApiError(response, "folder creation");
   }
 
   return {
@@ -213,10 +211,7 @@ export async function findGoogleDriveFolderByName(
   });
 
   if (!response.ok) {
-    throw new AuthFlowError(
-      "callback_failed",
-      `Google Drive folder search failed: ${response.status} ${response.statusText}`
-    );
+    throw createGoogleDriveApiError(response, "folder search");
   }
 
   const payload = await parseJson<{ files?: GoogleDriveFileResponse[] }>(response);
@@ -271,10 +266,7 @@ export async function uploadGoogleDriveFile(input: {
   const payload = await parseJson<GoogleDriveFileResponse>(response);
 
   if (!response.ok || !payload.id || !payload.name) {
-    throw new AuthFlowError(
-      "callback_failed",
-      `Google Drive file upload failed: ${response.status} ${response.statusText}`
-    );
+    throw createGoogleDriveApiError(response, "file upload");
   }
 
   return {
@@ -294,10 +286,7 @@ export async function getGoogleDriveFileBytes(accessToken: string, fileId: strin
   );
 
   if (!response.ok) {
-    throw new AuthFlowError(
-      "callback_failed",
-      `Google Drive file download failed: ${response.status} ${response.statusText}`
-    );
+    throw createGoogleDriveApiError(response, "file download");
   }
 
   return {
@@ -326,10 +315,7 @@ export async function moveGoogleDriveFile(input: {
   const payload = await parseJson<GoogleDriveFileResponse>(response);
 
   if (!response.ok || !payload.id || !payload.name) {
-    throw new AuthFlowError(
-      "callback_failed",
-      `Google Drive file move failed: ${response.status} ${response.statusText}`
-    );
+    throw createGoogleDriveApiError(response, "file move");
   }
 
   return {
@@ -360,10 +346,7 @@ export async function renameGoogleDriveFile(input: {
   const payload = await parseJson<GoogleDriveFileResponse>(response);
 
   if (!response.ok || !payload.id || !payload.name) {
-    throw new AuthFlowError(
-      "callback_failed",
-      `Google Drive file rename failed: ${response.status} ${response.statusText}`
-    );
+    throw createGoogleDriveApiError(response, "file rename");
   }
 
   return {

@@ -70,6 +70,8 @@ export default async function BusinessSettingsPage({
             : "Connect the owner's Google Drive next so Field-Snap can create and manage the business root folder.",
           variant: driveConnected ? ("success" as const) : ("info" as const)
         };
+  const needsReconnect =
+    driveStatus.connectionStatus === "error" || driveStatus.connectionStatus === "revoked";
   return (
     <div className="space-y-8">
       <PageHeader
@@ -97,7 +99,9 @@ export default async function BusinessSettingsPage({
             <div>
               <h2 className="text-lg font-semibold">Google Drive connection</h2>
               <p className="mt-2 text-sm text-[color:var(--muted)]">
-                {driveConnected
+                {needsReconnect
+                  ? "Drive access needs attention. Reconnect the owner account so Field-Snap can keep uploading, filing, and reviewing documents."
+                  : driveConnected
                   ? "Reconnect to refresh token material or confirm access to the existing business root folder."
                   : "Authorize Drive access with the owner account. Field-Snap will create or reuse one root folder for this business."}
               </p>

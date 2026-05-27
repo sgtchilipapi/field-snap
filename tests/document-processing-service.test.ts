@@ -529,4 +529,33 @@ describe("document-processing-service", () => {
     );
     expect(mockedUpdateDriveConnectionStatus).not.toHaveBeenCalled();
   });
+
+  it("settles the document when folder mappings are missing before classification starts", async () => {
+    mockedListJobFolders.mockResolvedValue([
+      {
+        id: "folder-1",
+        job_id: "job-1",
+        folder_key: "in_process",
+        folder_name: "00 In-Process",
+        drive_folder_id: "in-process-1",
+        created_at: new Date()
+      }
+    ]);
+
+    const result = await runNextDocumentProcessingJob(createProvider(Promise.resolve({})) as never);
+
+    expect(result).toEqual({
+      jobId: "processing-job-1",
+      documentId: "document-1",
+      status: "failed"
+    });
+    expect(mockedUpdateDocumentProcessingState).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        documentId: "document-1",
+        status: "failed",
+        failureReason: "missing_folder_mapping"
+      })
+    );
+    expect(mockedFailDocumentProcessingJob).toHaveBeenCalledWith("processing-job-1");
+  });
 });
