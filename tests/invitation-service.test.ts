@@ -10,6 +10,14 @@ vi.mock("@/lib/server/data/invitations", () => ({
   updateInvitationStatus: vi.fn()
 }));
 
+vi.mock("@/lib/server/audit/logs", () => ({
+  AUDIT_ACTIONS: {
+    invitationCreated: "invitation.created",
+    invitationAccepted: "invitation.accepted"
+  },
+  recordAuditEvent: vi.fn()
+}));
+
 vi.mock("@/lib/server/data/users", () => ({
   findUserById: vi.fn()
 }));
@@ -25,6 +33,7 @@ import {
   revokePendingInvitationsForEmail,
   updateInvitationStatus
 } from "@/lib/server/data/invitations";
+import { recordAuditEvent } from "@/lib/server/audit/logs";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { findUserById } from "@/lib/server/data/users";
 import {
@@ -35,6 +44,7 @@ import {
 } from "@/lib/server/services/invitation-service";
 
 const mockedAcceptInvitationRecord = vi.mocked(acceptInvitationRecord);
+const mockedRecordAuditEvent = vi.mocked(recordAuditEvent);
 const mockedCreateInvitation = vi.mocked(createInvitation);
 const mockedGetInvitationByTokenHash = vi.mocked(getInvitationByTokenHash);
 const mockedRevokePendingInvitationsForEmail = vi.mocked(revokePendingInvitationsForEmail);
@@ -103,6 +113,15 @@ describe("invitation-service", () => {
       })
     );
     expect(result.inviteUrl).toMatch(/^https:\/\/field-snap\.example\/invitations\//);
+    expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        businessId: "business-1",
+        actorUserId: "owner-1",
+        entityType: "invitation",
+        entityId: "invite-1",
+        action: "invitation.created"
+      })
+    );
   });
 
   it("rejects invitation creation for non-owners", async () => {
@@ -179,6 +198,15 @@ describe("invitation-service", () => {
       })
     );
     expect(result.businessId).toBe("business-1");
+    expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        businessId: "business-1",
+        actorUserId: "user-1",
+        entityType: "invitation",
+        entityId: "invite-1",
+        action: "invitation.accepted"
+      })
+    );
   });
 
   it("returns explicit mismatch preview state for the wrong signed-in email", async () => {

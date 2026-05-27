@@ -9,6 +9,13 @@ vi.mock("@/lib/server/data/categories", () => ({
   upsertCategory: vi.fn()
 }));
 
+vi.mock("@/lib/server/audit/logs", () => ({
+  AUDIT_ACTIONS: {
+    jobCreated: "job.created"
+  },
+  recordAuditEvent: vi.fn()
+}));
+
 vi.mock("@/lib/server/data/drive-connections", () => ({
   getDriveConnectionForBusiness: vi.fn(),
   updateDriveConnectionStatus: vi.fn()
@@ -46,6 +53,7 @@ import {
   getCategoryForBusiness,
   upsertCategory
 } from "@/lib/server/data/categories";
+import { recordAuditEvent } from "@/lib/server/audit/logs";
 import { getDriveConnectionForBusiness, updateDriveConnectionStatus } from "@/lib/server/data/drive-connections";
 import { createJobFolder } from "@/lib/server/data/job-folders";
 import { createJob, findActiveDuplicateJob, getJobForBusiness, updateJob } from "@/lib/server/data/jobs";
@@ -55,6 +63,7 @@ import { decryptSecret } from "@/lib/server/security/encryption";
 import { JobServiceError, createJobForBusiness, updateJobForBusiness } from "@/lib/server/services/job-service";
 
 const mockedFindCategoryForBusinessByName = vi.mocked(findCategoryForBusinessByName);
+const mockedRecordAuditEvent = vi.mocked(recordAuditEvent);
 const mockedFindCategoryForBusinessBySlug = vi.mocked(findCategoryForBusinessBySlug);
 const mockedGetCategoryForBusiness = vi.mocked(getCategoryForBusiness);
 const mockedUpsertCategory = vi.mocked(upsertCategory);
@@ -198,6 +207,15 @@ describe("job-service", () => {
     expect(result.folderName).toBe("Smith Residence - Backyard Cleanup - 2026-05-25");
     expect(mockedCreateGoogleDriveFolderInParent).toHaveBeenCalled();
     expect(mockedCreateJobFolder).toHaveBeenCalledTimes(10);
+    expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        businessId: "business-1",
+        actorUserId: "user-1",
+        entityType: "job",
+        entityId: "job-1",
+        action: "job.created"
+      })
+    );
   });
 
   it("creates a custom category inline before creating the job", async () => {

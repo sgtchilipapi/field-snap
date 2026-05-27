@@ -1,4 +1,4 @@
-import { createAuditLog } from "@/lib/server/audit/logs";
+import { AUDIT_ACTIONS, recordAuditEvent } from "@/lib/server/audit/logs";
 import {
   claimNextDocumentProcessingJob,
   completeDocumentProcessingJob,
@@ -182,13 +182,13 @@ async function markDriveConnectionErrorIfNeeded(businessId: string, error: unkno
 
 async function recordRoutingAudit(input: {
   businessId: string;
-  actorUserId: string;
+  actorUserId: string | null;
   documentId: string;
-  action: string;
+  action: (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
   oldValue?: unknown;
   newValue?: unknown;
 }) {
-  await createAuditLog({
+  await recordAuditEvent({
     businessId: input.businessId,
     actorUserId: input.actorUserId,
     entityType: "document",
@@ -271,7 +271,7 @@ async function handleAiClassificationOutcome(input: {
 
 async function finalizeFailedProcessing(input: {
   document: DocumentRow;
-  actorUserId: string;
+  actorUserId: string | null;
   accessToken: string;
   failureReason: "ai_error" | "drive_move_error";
   needsReviewFolderId: string;
@@ -295,12 +295,12 @@ async function finalizeFailedProcessing(input: {
           businessId: input.document.business_id,
           actorUserId: input.actorUserId,
           documentId: input.document.id,
-          action: "document.file_moved",
+          action: AUDIT_ACTIONS.documentMoved,
           oldValue: {
-            folderId: input.document.current_drive_folder_id
+            folder_id: input.document.current_drive_folder_id
           },
           newValue: {
-            folderId: input.needsReviewFolderId
+            folder_id: input.needsReviewFolderId
           }
         });
       }
@@ -318,18 +318,6 @@ async function finalizeFailedProcessing(input: {
     status: "failed",
     currentDriveFolderId: movedFolderId,
     failureReason: input.failureReason
-  });
-
-  await recordRoutingAudit({
-    businessId: input.document.business_id,
-    actorUserId: input.actorUserId,
-    documentId: input.document.id,
-    action: "document.routing_failed",
-    newValue: {
-      status: "failed",
-      failureReason: input.failureReason,
-      folderId: movedFolderId
-    }
   });
 }
 
@@ -362,12 +350,12 @@ export async function processDocumentProcessingJob(
 
     await recordRoutingAudit({
       businessId: context.business.id,
-      actorUserId: context.document.uploaded_by_user_id,
+      actorUserId: null,
       documentId: context.document.id,
-      action: "document.ai_classified",
+      action: AUDIT_ACTIONS.documentAiClassified,
       newValue: {
-        documentType: classification.document_type,
-        targetFolderKey: classification.target_folder_key,
+        document_type: classification.document_type,
+        target_folder_key: classification.target_folder_key,
         confidence: classification.confidence,
         valid: classification.valid
       }
@@ -408,14 +396,14 @@ export async function processDocumentProcessingJob(
     if (moveResult) {
       await recordRoutingAudit({
         businessId: context.business.id,
-        actorUserId: context.document.uploaded_by_user_id,
+        actorUserId: null,
         documentId: context.document.id,
-        action: "document.file_moved",
+        action: AUDIT_ACTIONS.documentMoved,
         oldValue: {
-          folderId: context.document.current_drive_folder_id
+          folder_id: context.document.current_drive_folder_id
         },
         newValue: {
-          folderId: destinationFolderId
+          folder_id: destinationFolderId
         }
       });
     }
@@ -439,9 +427,9 @@ export async function processDocumentProcessingJob(
 
       await recordRoutingAudit({
         businessId: context.business.id,
-        actorUserId: context.document.uploaded_by_user_id,
+        actorUserId: null,
         documentId: context.document.id,
-        action: "document.file_renamed",
+        action: AUDIT_ACTIONS.documentRenamed,
         oldValue: {
           filename: context.document.current_filename
         },
@@ -459,18 +447,20 @@ export async function processDocumentProcessingJob(
       failureReason: null
     });
 
-    await recordRoutingAudit({
-      businessId: context.business.id,
-      actorUserId: context.document.uploaded_by_user_id,
-      documentId: context.document.id,
-      action: "document.routing_finalized",
-      newValue: {
-        status: nextStatus,
-        targetFolderKey: shouldAutoFile ? classification.target_folder_key : "needs_review",
-        confidence: classification.confidence,
-        valid: classification.valid
-      }
-    });
+    if (shouldAutoFile) {
+      await recordRoutingAudit({
+        businessId: context.business.id,
+        actorUserId: null,
+        documentId: context.document.id,
+        action: AUDIT_ACTIONS.documentAutoFiled,
+        newValue: {
+          status: nextStatus,
+          target_folder_key: classification.target_folder_key,
+          confidence: classification.confidence,
+          valid: classification.valid
+        }
+      });
+    }
 
     return {
       status: nextStatus

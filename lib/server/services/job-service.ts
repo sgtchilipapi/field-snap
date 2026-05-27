@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AUDIT_ACTIONS, recordAuditEvent } from "@/lib/server/audit/logs";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { JOB_FOLDER_TEMPLATES } from "@/lib/server/constants/folder-template";
 import {
@@ -260,6 +261,21 @@ export async function createJobForBusiness(input: {
         })
       )
     );
+
+    await recordAuditEvent({
+      businessId: input.businessId,
+      actorUserId: input.userId,
+      entityType: "job",
+      entityId: job.id,
+      action: AUDIT_ACTIONS.jobCreated,
+      newValue: {
+        category_id: category.id,
+        client_name: job.client_name,
+        job_name: job.job_name,
+        job_date: job.job_date,
+        drive_folder_id: job.drive_folder_id
+      }
+    });
 
     return {
       job,

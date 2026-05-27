@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
-import { createAuditLog, listAuditLogsForEntity } from "@/lib/server/audit/logs";
+import { AUDIT_ACTIONS, recordAuditEvent, listAuditLogsForEntity } from "@/lib/server/audit/logs";
 import { AuthFlowError } from "@/lib/server/auth/errors";
 import { JOB_FOLDER_TEMPLATES, GENERAL_FOLDER_TEMPLATES } from "@/lib/server/constants/folder-template";
 import { getDriveConnectionForBusiness, updateDriveConnectionStatus } from "@/lib/server/data/drive-connections";
@@ -410,12 +410,12 @@ export async function patchDocumentForReview(input: {
     document.current_drive_folder_id !== destination.driveFolderId ||
     document.capture_context !== destination.captureContext
   ) {
-    await createAuditLog({
+    await recordAuditEvent({
       businessId: input.businessId,
       actorUserId: input.userId,
       entityType: "document",
       entityId: input.documentId,
-      action: "document.moved",
+      action: AUDIT_ACTIONS.documentMoved,
       oldValue: {
         job_id: document.job_id,
         capture_context: document.capture_context,
@@ -432,12 +432,12 @@ export async function patchDocumentForReview(input: {
   }
 
   if (Object.keys(metadataChangedFields).length > 0) {
-    await createAuditLog({
+    await recordAuditEvent({
       businessId: input.businessId,
       actorUserId: input.userId,
       entityType: "document",
       entityId: input.documentId,
-      action: "document.metadata_updated",
+      action: AUDIT_ACTIONS.documentMetadataUpdated,
       oldValue: Object.fromEntries(
         Object.entries(metadataChangedFields).map(([key, value]) => [key, value.old])
       ),
@@ -448,12 +448,12 @@ export async function patchDocumentForReview(input: {
   }
 
   if (parsed.mark_reviewed && document.status !== "reviewed") {
-    await createAuditLog({
+    await recordAuditEvent({
       businessId: input.businessId,
       actorUserId: input.userId,
       entityType: "document",
       entityId: input.documentId,
-      action: "document.reviewed",
+      action: AUDIT_ACTIONS.documentReviewed,
       oldValue: {
         status: document.status
       },

@@ -2,7 +2,12 @@ import { ZodError } from "zod";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/server/audit/logs", () => ({
-  createAuditLog: vi.fn(),
+  AUDIT_ACTIONS: {
+    documentMoved: "document.moved",
+    documentMetadataUpdated: "document.metadata_updated",
+    documentReviewed: "document.reviewed"
+  },
+  recordAuditEvent: vi.fn(),
   listAuditLogsForEntity: vi.fn()
 }));
 
@@ -43,7 +48,7 @@ vi.mock("@/lib/server/security/encryption", () => ({
   decryptSecret: vi.fn()
 }));
 
-import { createAuditLog, listAuditLogsForEntity } from "@/lib/server/audit/logs";
+import { recordAuditEvent, listAuditLogsForEntity } from "@/lib/server/audit/logs";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { getDriveConnectionForBusiness } from "@/lib/server/data/drive-connections";
 import { getDocumentForBusiness, updateDocumentReviewFields } from "@/lib/server/data/documents";
@@ -58,7 +63,7 @@ import {
   patchDocumentForReview
 } from "@/lib/server/services/review-service";
 
-const mockedCreateAuditLog = vi.mocked(createAuditLog);
+const mockedRecordAuditEvent = vi.mocked(recordAuditEvent);
 const mockedListAuditLogsForEntity = vi.mocked(listAuditLogsForEntity);
 const mockedGetDriveConnectionForBusiness = vi.mocked(getDriveConnectionForBusiness);
 const mockedGetDocumentForBusiness = vi.mocked(getDocumentForBusiness);
@@ -199,7 +204,7 @@ describe("review-service", () => {
         failureReason: null
       })
     );
-    expect(mockedCreateAuditLog).toHaveBeenCalledTimes(3);
+    expect(mockedRecordAuditEvent).toHaveBeenCalledTimes(3);
   });
 
   it("updates metadata without moving the file when the folder stays the same", async () => {

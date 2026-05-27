@@ -1,3 +1,4 @@
+import { AUDIT_ACTIONS, recordAuditEvent } from "@/lib/server/audit/logs";
 import { createDocument } from "@/lib/server/data/documents";
 import { enqueueDocumentProcessingJob } from "@/lib/server/data/document-processing-jobs";
 import { getDriveConnectionForBusiness, updateDriveConnectionStatus } from "@/lib/server/data/drive-connections";
@@ -142,6 +143,21 @@ export async function uploadJobDocument(input: {
     correlationId: crypto.randomUUID()
   });
 
+  await recordAuditEvent({
+    businessId: input.businessId,
+    actorUserId: input.userId,
+    entityType: "document",
+    entityId: document.id,
+    action: AUDIT_ACTIONS.documentUploaded,
+    newValue: {
+      capture_context: document.capture_context,
+      job_id: document.job_id,
+      folder_id: document.current_drive_folder_id,
+      filename: document.current_filename,
+      status: document.status
+    }
+  });
+
   return {
     documentId: document.id,
     status: document.status
@@ -214,6 +230,21 @@ export async function uploadGeneralDocument(input: {
   await enqueueDocumentProcessingJob({
     documentId: document.id,
     correlationId: crypto.randomUUID()
+  });
+
+  await recordAuditEvent({
+    businessId: input.businessId,
+    actorUserId: input.userId,
+    entityType: "document",
+    entityId: document.id,
+    action: AUDIT_ACTIONS.documentUploaded,
+    newValue: {
+      capture_context: document.capture_context,
+      job_id: document.job_id,
+      folder_id: document.current_drive_folder_id,
+      filename: document.current_filename,
+      status: document.status
+    }
   });
 
   return {

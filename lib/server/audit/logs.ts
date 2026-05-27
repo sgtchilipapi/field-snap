@@ -1,6 +1,23 @@
 import { db } from "@/lib/server/db/client";
 import type { AuditLogRow } from "@/lib/server/db/schema";
 
+export const AUDIT_ACTIONS = {
+  businessCreated: "business.created",
+  driveConnected: "drive.connected",
+  jobCreated: "job.created",
+  documentUploaded: "document.uploaded",
+  documentAiClassified: "document.ai_classified",
+  documentAutoFiled: "document.auto_filed",
+  documentMoved: "document.moved",
+  documentRenamed: "document.renamed",
+  documentReviewed: "document.reviewed",
+  documentMetadataUpdated: "document.metadata_updated",
+  invitationCreated: "invitation.created",
+  invitationAccepted: "invitation.accepted"
+} as const;
+
+export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
+
 export type AuditLogWithActorRow = AuditLogRow & {
   actor_name: string | null;
   actor_email: string | null;
@@ -25,7 +42,7 @@ export async function createAuditLog(input: {
   actorUserId: string | null;
   entityType: string;
   entityId: string;
-  action: string;
+  action: AuditAction;
   oldValue?: unknown;
   newValue?: unknown;
 }) {
@@ -64,6 +81,18 @@ export async function createAuditLog(input: {
   `;
 
   return mapAuditLog(rows[0]);
+}
+
+export async function recordAuditEvent(input: {
+  businessId: string;
+  actorUserId: string | null;
+  entityType: string;
+  entityId: string;
+  action: AuditAction;
+  oldValue?: unknown;
+  newValue?: unknown;
+}) {
+  return createAuditLog(input);
 }
 
 export async function listAuditLogsForEntity(input: {

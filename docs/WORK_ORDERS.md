@@ -687,6 +687,10 @@ Acceptance
 
 ## WO-16 — Audit log
 
+Status
+
+`done`
+
 Goal
 
 Capture a clear history of important system and user actions so document routing decisions are explainable.

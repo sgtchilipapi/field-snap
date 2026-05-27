@@ -4,6 +4,13 @@ vi.mock("@/lib/server/data/documents", () => ({
   createDocument: vi.fn()
 }));
 
+vi.mock("@/lib/server/audit/logs", () => ({
+  AUDIT_ACTIONS: {
+    documentUploaded: "document.uploaded"
+  },
+  recordAuditEvent: vi.fn()
+}));
+
 vi.mock("@/lib/server/data/document-processing-jobs", () => ({
   enqueueDocumentProcessingJob: vi.fn()
 }));
@@ -34,6 +41,7 @@ vi.mock("@/lib/server/services/job-service", () => ({
 }));
 
 import { createDocument } from "@/lib/server/data/documents";
+import { recordAuditEvent } from "@/lib/server/audit/logs";
 import { enqueueDocumentProcessingJob } from "@/lib/server/data/document-processing-jobs";
 import {
   getDriveConnectionForBusiness,
@@ -51,6 +59,7 @@ import {
 } from "@/lib/server/services/document-upload-service";
 
 const mockedCreateDocument = vi.mocked(createDocument);
+const mockedRecordAuditEvent = vi.mocked(recordAuditEvent);
 const mockedEnqueueDocumentProcessingJob = vi.mocked(enqueueDocumentProcessingJob);
 const mockedGetDriveConnectionForBusiness = vi.mocked(getDriveConnectionForBusiness);
 const mockedUpdateDriveConnectionStatus = vi.mocked(updateDriveConnectionStatus);
@@ -216,6 +225,15 @@ describe("document-upload-service", () => {
     );
     expect(mockedCreateDocument).toHaveBeenCalled();
     expect(mockedEnqueueDocumentProcessingJob).toHaveBeenCalled();
+    expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        businessId: "business-1",
+        actorUserId: "user-1",
+        entityType: "document",
+        entityId: "document-1",
+        action: "document.uploaded"
+      })
+    );
   });
 
   it("rejects uploads for users outside the business scope", async () => {

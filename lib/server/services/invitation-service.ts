@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
+import { AUDIT_ACTIONS, recordAuditEvent } from "@/lib/server/audit/logs";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import type { InvitationRow } from "@/lib/server/db/schema";
 import {
@@ -123,6 +124,19 @@ export async function createInvitationForBusiness(input: {
     tokenHash: hashInvitationToken(token),
     invitedByUserId: input.userId,
     expiresAt
+  });
+
+  await recordAuditEvent({
+    businessId: input.businessId,
+    actorUserId: input.userId,
+    entityType: "invitation",
+    entityId: invitation.id,
+    action: AUDIT_ACTIONS.invitationCreated,
+    newValue: {
+      invited_email: invitation.invited_email,
+      role: invitation.role,
+      expires_at: invitation.expires_at.toISOString()
+    }
   });
 
   return {
@@ -253,6 +267,19 @@ export async function acceptInvitation(input: {
     userId: user.id,
     role: invitation.role,
     acceptedAt
+  });
+
+  await recordAuditEvent({
+    businessId: invitation.business_id,
+    actorUserId: user.id,
+    entityType: "invitation",
+    entityId: invitation.id,
+    action: AUDIT_ACTIONS.invitationAccepted,
+    newValue: {
+      user_id: user.id,
+      role: invitation.role,
+      accepted_at: acceptedAt.toISOString()
+    }
   });
 
   return {

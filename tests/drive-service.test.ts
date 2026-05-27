@@ -5,6 +5,13 @@ vi.mock("@/lib/server/data/businesses", () => ({
   updateBusinessDriveRootFolder: vi.fn()
 }));
 
+vi.mock("@/lib/server/audit/logs", () => ({
+  AUDIT_ACTIONS: {
+    driveConnected: "drive.connected"
+  },
+  recordAuditEvent: vi.fn()
+}));
+
 vi.mock("@/lib/server/data/drive-connections", () => ({
   getDriveConnectionForBusiness: vi.fn(),
   updateDriveConnectionStatus: vi.fn(),
@@ -27,6 +34,7 @@ import {
   getBusinessDriveStatusForUser,
   connectBusinessDriveFromCode
 } from "@/lib/server/services/drive-service";
+import { recordAuditEvent } from "@/lib/server/audit/logs";
 import {
   getBusinessForUser,
   updateBusinessDriveRootFolder
@@ -44,6 +52,7 @@ import {
 
 const mockedGetBusinessForUser = vi.mocked(getBusinessForUser);
 const mockedUpdateBusinessDriveRootFolder = vi.mocked(updateBusinessDriveRootFolder);
+const mockedRecordAuditEvent = vi.mocked(recordAuditEvent);
 const mockedGetDriveConnectionForBusiness = vi.mocked(getDriveConnectionForBusiness);
 const mockedUpsertDriveConnection = vi.mocked(upsertDriveConnection);
 const mockedCreateGoogleDriveFolder = vi.mocked(createGoogleDriveFolder);
@@ -151,5 +160,14 @@ describe("drive-service", () => {
       })
     );
     expect(mockedUpdateBusinessDriveRootFolder).toHaveBeenCalledWith("business-1", "folder-123");
+    expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        businessId: "business-1",
+        actorUserId: "user-1",
+        entityType: "business",
+        entityId: "business-1",
+        action: "drive.connected"
+      })
+    );
   });
 });

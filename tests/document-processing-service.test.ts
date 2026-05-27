@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/server/audit/logs", () => ({
-  createAuditLog: vi.fn()
+  AUDIT_ACTIONS: {
+    documentAiClassified: "document.ai_classified",
+    documentAutoFiled: "document.auto_filed",
+    documentMoved: "document.moved",
+    documentRenamed: "document.renamed"
+  },
+  recordAuditEvent: vi.fn()
 }));
 
 vi.mock("@/lib/server/data/businesses", () => ({
@@ -52,7 +58,7 @@ vi.mock("@/lib/server/security/encryption", () => ({
   decryptSecret: vi.fn()
 }));
 
-import { createAuditLog } from "@/lib/server/audit/logs";
+import { recordAuditEvent } from "@/lib/server/audit/logs";
 import { getBusinessById } from "@/lib/server/data/businesses";
 import {
   claimNextDocumentProcessingJob,
@@ -81,7 +87,7 @@ import {
 import { decryptSecret } from "@/lib/server/security/encryption";
 import { runNextDocumentProcessingJob } from "@/lib/server/services/document-processing-service";
 
-const mockedCreateAuditLog = vi.mocked(createAuditLog);
+const mockedRecordAuditEvent = vi.mocked(recordAuditEvent);
 const mockedGetBusinessById = vi.mocked(getBusinessById);
 const mockedClaimNextDocumentProcessingJob = vi.mocked(claimNextDocumentProcessingJob);
 const mockedCompleteDocumentProcessingJob = vi.mocked(completeDocumentProcessingJob);
@@ -319,7 +325,7 @@ describe("document-processing-service", () => {
       })
     );
     expect(mockedCompleteDocumentProcessingJob).toHaveBeenCalledWith("processing-job-1");
-    expect(mockedCreateAuditLog).toHaveBeenCalled();
+    expect(mockedRecordAuditEvent).toHaveBeenCalled();
   });
 
   it("routes a low-confidence result to Needs Review and preserves AI metadata", async () => {

@@ -1,3 +1,4 @@
+import { AUDIT_ACTIONS, recordAuditEvent } from "@/lib/server/audit/logs";
 import {
   updateBusinessDriveRootFolder
 } from "@/lib/server/data/businesses";
@@ -144,6 +145,18 @@ export async function connectBusinessDriveFromCode(input: {
       googleAccountEmail,
       rootFolderId,
       tokens
+    });
+
+    await recordAuditEvent({
+      businessId: input.businessId,
+      actorUserId: input.connectedByUserId,
+      entityType: "business",
+      entityId: input.businessId,
+      action: AUDIT_ACTIONS.driveConnected,
+      newValue: {
+        google_account_email: googleAccountEmail,
+        root_folder_id: rootFolderId
+      }
     });
 
     return {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AUDIT_ACTIONS, recordAuditEvent } from "@/lib/server/audit/logs";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import {
   createBusinessForOwner,
@@ -25,10 +26,24 @@ export function getBusinessLandingPath(business: Pick<BusinessListItem, "id" | "
 
 export async function createBusiness(input: unknown, ownerUserId: string) {
   const parsed = createBusinessSchema.parse(input);
-  return createBusinessForOwner({
+  const business = await createBusinessForOwner({
     name: parsed.name,
     ownerUserId
   });
+
+  await recordAuditEvent({
+    businessId: business.id,
+    actorUserId: ownerUserId,
+    entityType: "business",
+    entityId: business.id,
+    action: AUDIT_ACTIONS.businessCreated,
+    newValue: {
+      name: business.name,
+      owner_user_id: business.owner_user_id
+    }
+  });
+
+  return business;
 }
 
 export async function listBusinessesForUser(userId: string) {

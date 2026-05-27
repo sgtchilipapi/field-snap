@@ -9,6 +9,13 @@ import { requireSession } from "@/lib/server/auth/session";
 import { getDocumentDetailForUser, type ReviewServiceError } from "@/lib/server/services/review-service";
 import { getDocumentContextLabel } from "@/lib/server/services/review-view";
 
+function formatActionLabel(action: string) {
+  return action
+    .split(".")
+    .join(" ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
 function formatDateTime(value: Date) {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
@@ -47,6 +54,38 @@ function getReturnHref(businessId: string, from: string | undefined) {
   }
 
   return `/businesses/${businessId}/review`;
+}
+
+function summarizeAuditValue(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  return Object.entries(value as Record<string, unknown>)
+    .map(([key, entryValue]) => `${key.replace(/_/g, " ")}: ${String(entryValue)}`)
+    .join(" • ");
+}
+
+function getAuditSummary(entry: {
+  old_value: unknown | null;
+  new_value: unknown | null;
+}) {
+  const oldSummary = summarizeAuditValue(entry.old_value);
+  const newSummary = summarizeAuditValue(entry.new_value);
+
+  if (oldSummary && newSummary) {
+    return `Changed from ${oldSummary} to ${newSummary}.`;
+  }
+
+  if (newSummary) {
+    return newSummary;
+  }
+
+  if (oldSummary) {
+    return oldSummary;
+  }
+
+  return "No field-level changes were recorded for this event.";
 }
 
 export default async function DocumentDetailPage({
@@ -130,12 +169,13 @@ export default async function DocumentDetailPage({
                 auditLogs.map((entry) => (
                   <div key={entry.id} className="rounded-2xl border border-[color:var(--border)] bg-white p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-medium">{entry.action}</p>
+                      <p className="font-medium">{formatActionLabel(entry.action)}</p>
                       <p className="text-sm text-[color:var(--muted)]">{formatDateTime(entry.created_at)}</p>
                     </div>
                     <p className="mt-2 text-sm text-[color:var(--muted)]">
                       Actor: {entry.actor_name ?? entry.actor_email ?? "System"}
                     </p>
+                    <p className="mt-3 text-sm text-[color:var(--foreground)]">{getAuditSummary(entry)}</p>
                     {entry.old_value ? (
                       <pre className="mt-3 overflow-x-auto rounded-2xl bg-slate-950 p-3 text-xs text-slate-100">
                         {JSON.stringify(entry.old_value, null, 2)}
