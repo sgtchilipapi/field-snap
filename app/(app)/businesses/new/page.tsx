@@ -10,7 +10,7 @@ export default async function NewBusinessPage() {
       <PageHeader
         eyebrow="Business setup"
         title="Create a Field-Snap business"
-        description="This creates the business record and your owner-admin membership. Drive connection happens next, in the business settings flow."
+        description="This creates the business record and your owner-admin membership."
       />
       <NewBusinessForm />
     </div>

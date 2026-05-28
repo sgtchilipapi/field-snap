@@ -8,11 +8,16 @@ export function PageHeader({
   description?: string;
 }) {
   return (
-    <header className="space-y-3">
-      <p className="text-xs uppercase tracking-[0.28em] text-[color:var(--muted)]">{eyebrow}</p>
-      <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-      {description ? <p className="max-w-3xl text-[color:var(--muted)]">{description}</p> : null}
+    <header className="space-y-2">
+      <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[color:var(--muted)]">
+        {eyebrow}
+      </p>
+      <h1 className="text-[1.75rem] font-semibold tracking-tight md:text-[2.2rem]">{title}</h1>
+      {description ? (
+        <p className="max-w-3xl text-sm leading-6 text-[color:var(--muted)] md:text-[0.98rem]">
+          {description}
+        </p>
+      ) : null}
     </header>
   );
 }
-

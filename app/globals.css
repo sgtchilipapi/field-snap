@@ -4,16 +4,20 @@
 
 :root {
   color-scheme: light;
-  --background: #f6f1e6;
+  --background: #f4efe5;
   --foreground: #12243a;
-  --muted: #6a7685;
-  --surface: rgba(255, 255, 255, 0.82);
+  --muted: #5f6a78;
+  --surface: rgba(255, 255, 255, 0.86);
   --surface-strong: #ffffff;
+  --surface-muted: rgba(255, 251, 244, 0.92);
   --border: rgba(18, 36, 58, 0.12);
   --accent: #d56f3e;
   --accent-strong: #b6552b;
   --success: #356b4c;
   --danger: #9f3f32;
+  --shadow-shell: 0 24px 80px rgba(18, 36, 58, 0.12);
+  --top-bar-height: 4.75rem;
+  --bottom-nav-offset: calc(6.5rem + env(safe-area-inset-bottom));
 }
 
 * {
@@ -21,6 +25,7 @@
 }
 
 html {
+  min-height: 100%;
   background:
     radial-gradient(circle at top left, rgba(213, 111, 62, 0.18), transparent 30%),
     radial-gradient(circle at top right, rgba(207, 228, 241, 0.9), transparent 35%),
@@ -33,12 +38,19 @@ body {
   color: var(--foreground);
   background: transparent;
   font-family:
-    "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    "Avenir Next", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
 }
 
 button,
@@ -48,3 +60,47 @@ select {
   font: inherit;
 }
 
+button,
+input,
+textarea,
+select {
+  min-height: 2.875rem;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border-radius: 1rem;
+}
+
+button {
+  cursor: pointer;
+}
+
+textarea {
+  resize: vertical;
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 70%, white 30%);
+  outline-offset: 2px;
+}
+
+main {
+  min-width: 0;
+}
+
+@layer utilities {
+  .surface-card {
+    @apply rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[var(--shadow-shell)] backdrop-blur;
+  }
+
+  .surface-panel {
+    @apply rounded-[1.25rem] border border-[color:var(--border)] bg-[color:var(--surface-muted)];
+  }
+
+  .mobile-page-grid {
+    @apply grid gap-5 md:gap-6;
+  }
+}

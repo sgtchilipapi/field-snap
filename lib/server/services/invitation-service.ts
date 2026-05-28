@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "crypto";
 import { z } from "zod";
 import { AUDIT_ACTIONS, recordAuditEvent } from "@/lib/server/audit/logs";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";

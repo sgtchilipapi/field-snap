@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
 import { env } from "@/lib/server/env";
 
 const ALGORITHM = "aes-256-gcm";

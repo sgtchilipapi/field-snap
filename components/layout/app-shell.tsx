@@ -1,29 +1,34 @@
 import type { ReactNode } from "react";
 import { PageContainer } from "@/components/layout/page-container";
-import { SiteHeader } from "@/components/layout/site-header";
+import { cn } from "@/lib/utils";
 
 export function AppShell({
-  header,
+  topBar,
   nav,
-  children
+  children,
+  className
 }: {
-  header?: ReactNode;
+  topBar?: ReactNode;
   nav?: ReactNode;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <PageContainer className="py-8">
-      <div className="rounded-[2rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-4 shadow-shell backdrop-blur md:p-6">
-        {header ?? <SiteHeader />}
-        <div className="mt-6 grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="rounded-[1.5rem] border border-[color:var(--border)] bg-white/70 p-5">
-            {nav}
-          </aside>
-          <main className="rounded-[1.5rem] border border-[color:var(--border)] bg-white/80 p-6">
-            {children}
-          </main>
+    <div className="min-h-screen">
+      {topBar ? (
+        <div className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-[color:var(--surface-strong)]/88 backdrop-blur">
+          <PageContainer className="py-3">{topBar}</PageContainer>
         </div>
-      </div>
-    </PageContainer>
+      ) : null}
+      {nav ? <PageContainer className="pt-4 md:pt-5">{nav}</PageContainer> : null}
+      <PageContainer
+        className={cn(
+          "pb-[var(--bottom-nav-offset)] pt-5 md:pb-10 md:pt-6",
+          className
+        )}
+      >
+        <main className="mobile-page-grid">{children}</main>
+      </PageContainer>
+    </div>
   );
 }

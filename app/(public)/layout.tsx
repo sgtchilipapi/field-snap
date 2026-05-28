@@ -3,9 +3,8 @@ import { PageContainer } from "@/components/layout/page-container";
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
-    <PageContainer className="flex min-h-screen items-center py-12">
-      <div className="grid w-full gap-8 lg:grid-cols-[1.1fr_0.9fr]">{children}</div>
+    <PageContainer className="flex min-h-screen items-center py-8 md:py-12">
+      <div className="mx-auto grid w-full max-w-5xl gap-5 md:gap-6">{children}</div>
     </PageContainer>
   );
 }
-

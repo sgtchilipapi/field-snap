@@ -24,7 +24,7 @@ export default async function BusinessesPage() {
       <PageHeader
         eyebrow="Businesses"
         title="Choose a business"
-        description="Field-Snap keeps business context in the URL so switching businesses changes the route instead of relying on a hidden session flag."
+        description=""
       />
       <div className="grid gap-4">
         {businesses.map((business) => (

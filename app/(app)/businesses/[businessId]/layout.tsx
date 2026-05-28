@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/layout/app-shell";
-import { BusinessSwitcher } from "@/components/business/business-switcher";
 import { BusinessNav } from "@/components/business/business-nav";
-import { LogoutButton } from "@/components/auth/logout-button";
+import { BusinessTopBar } from "@/components/business/business-top-bar";
 import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
 import { listBusinessesForUser } from "@/lib/server/services/business-service";
@@ -27,14 +26,14 @@ export default async function BusinessLayout({
 
   return (
     <AppShell
-      header={<BusinessSwitcher businesses={businesses} currentBusinessId={businessId} />}
-      nav={
-        <div className="space-y-6">
-          <BusinessNav businessId={businessId} role={details.membership.role} />
-          <div className="pt-2">
-            <LogoutButton />
-          </div>
-        </div>
+      nav={<BusinessNav businessId={businessId} role={details.membership.role} />}
+      topBar={
+        <BusinessTopBar
+          businesses={businesses}
+          currentBusinessId={businessId}
+          currentBusinessName={details.business.name}
+          role={details.membership.role}
+        />
       }
     >
       {children}

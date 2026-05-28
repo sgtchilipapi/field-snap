@@ -17,36 +17,42 @@ function getSwitchHref(pathname: string, targetBusinessId: string) {
 
 export function BusinessSwitcher({
   businesses,
-  currentBusinessId
+  currentBusinessId,
+  onNavigate
 }: {
   businesses: BusinessListItem[];
   currentBusinessId: string;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
 
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-xs uppercase tracking-[0.28em] text-[color:var(--muted)]">
-          Current business
+        <p className="text-xs uppercase tracking-[0.24em] text-[color:var(--muted)]">
+          Switch business
         </p>
-        <h1 className="mt-2 text-2xl font-semibold">Field-Snap business context</h1>
+        <h3 className="mt-2 text-base font-semibold">Current route follows the selected business</h3>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid gap-2">
         {businesses.map((business) => {
           const isCurrent = business.id === currentBusinessId;
 
           return (
             <Link
-              className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+              className={`flex items-center justify-between rounded-[1rem] border px-4 py-3 text-sm font-medium transition ${
                 isCurrent
                   ? "border-[color:var(--foreground)] bg-[color:var(--foreground)] text-white"
-                  : "border-[color:var(--border)] bg-white text-[color:var(--foreground)] hover:border-[color:var(--foreground)]"
+                  : "border-[color:var(--border)] bg-[color:var(--surface-muted)] text-[color:var(--foreground)] hover:border-[color:var(--foreground)]"
               }`}
               href={getSwitchHref(pathname, business.id)}
               key={business.id}
+              onClick={onNavigate}
             >
-              {business.name}
+              <span className="truncate">{business.name}</span>
+              <span className={isCurrent ? "text-white/80" : "text-[color:var(--muted)]"}>
+                {isCurrent ? "Current" : "Open"}
+              </span>
             </Link>
           );
         })}

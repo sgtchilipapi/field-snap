@@ -14,11 +14,10 @@ export function FormField({
 }) {
   return (
     <label className="block space-y-2">
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium text-[color:var(--foreground)]">{label}</span>
       {children}
       {hint ? <span className="block text-sm text-[color:var(--muted)]">{hint}</span> : null}
       {error ? <span className={cn("block text-sm text-[color:var(--danger)]")}>{error}</span> : null}
     </label>
   );
 }
-

@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 type RequestLike = {
   headers?: Headers | { get(name: string): string | null | undefined };
   method?: string;
@@ -32,11 +30,19 @@ function readHeader(request: RequestLike | undefined, name: string) {
   return request?.headers?.get(name) ?? null;
 }
 
+function createRequestId() {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `req_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
 export function getRequestId(request?: RequestLike) {
   return (
     readHeader(request, "x-request-id") ??
     readHeader(request, "x-vercel-id") ??
-    randomUUID()
+    createRequestId()
   );
 }
 
