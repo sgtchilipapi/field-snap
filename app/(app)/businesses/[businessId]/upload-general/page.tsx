@@ -11,7 +11,7 @@ export default async function GeneralUploadPage({
 }) {
   const session = await requireSession();
   const { businessId } = await params;
-  const details = await requireBusinessPageAccess({
+  await requireBusinessPageAccess({
     businessId,
     userId: session.userId,
     capability: "documents:upload_general"
@@ -21,28 +21,26 @@ export default async function GeneralUploadPage({
     <div className="space-y-8">
       <PageHeader
         eyebrow="General upload"
-        title={`${details.business.name} business documents`}
-        description="Upload non-job business documents directly into General Business Docs so Field-Snap can classify and route them in the background."
+        title="Upload business documents"
+        description="Use this only for documents that do not belong to a job."
       />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="space-y-4">
         <GeneralUploadForm businessId={businessId} />
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-6">
-          <p className="text-sm text-[color:var(--muted)]">
-            Uploads go first to{" "}
+        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
+          <p className="text-sm leading-6 text-[color:var(--muted)]">
+            General uploads land in{" "}
             <span className="font-medium text-[color:var(--foreground)]">
               General Business Docs / 00 In-Process
             </span>{" "}
-            before AI routes them into the matching business folder or Needs Review.
+            first, then Field-Snap routes them into the matching business folder or Needs Review.
           </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link
-              className="rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
-              href={`/businesses/${businessId}/jobs`}
-            >
-              Back to jobs
-            </Link>
-          </div>
         </div>
+        <Link
+          className="inline-flex w-full items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-4 py-3 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)] sm:w-auto"
+          href={`/businesses/${businessId}/jobs`}
+        >
+          Back to jobs
+        </Link>
       </div>
     </div>
   );

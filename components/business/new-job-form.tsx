@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { submitNewJob, type JobFormState } from "@/app/(app)/businesses/[businessId]/jobs/actions";
 import { FormField } from "@/components/ui/form-field";
 import { InlineAlert } from "@/components/ui/inline-alert";
+import { cn } from "@/lib/utils";
 import type { CategoryRow } from "@/lib/server/db/schema";
 
 const initialState: JobFormState = {
@@ -16,21 +17,29 @@ function getTodayForDateInput() {
 
 export function NewJobForm({
   businessId,
-  categories
+  categories,
+  variant = "card"
 }: {
   businessId: string;
   categories: CategoryRow[];
+  variant?: "card" | "sheet";
 }) {
   const [creatingCustomCategory, setCreatingCustomCategory] = useState(false);
   const [state, formAction, pending] = useActionState(
     submitNewJob.bind(null, businessId),
     initialState
   );
+  const isSheetVariant = variant === "sheet";
 
   return (
     <form
       action={formAction}
-      className="space-y-5 rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-6"
+      className={cn(
+        "space-y-5",
+        isSheetVariant
+          ? ""
+          : "rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5 md:p-6"
+      )}
     >
       <div className="grid gap-5 md:grid-cols-2">
         <FormField label="Category">
@@ -104,13 +113,21 @@ export function NewJobForm({
       {state.error ? (
         <InlineAlert title="Could not create job" description={state.error} variant="danger" />
       ) : null}
-      <button
-        className="rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={pending}
-        type="submit"
+      <div
+        className={cn(
+          isSheetVariant
+            ? "sticky bottom-0 -mx-4 border-t border-[color:var(--border)] bg-[color:var(--surface-strong)]/96 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur md:-mx-6 md:px-6"
+            : ""
+        )}
       >
-        {pending ? "Creating..." : "Create job"}
-      </button>
+        <button
+          className="w-full rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+          disabled={pending}
+          type="submit"
+        >
+          {pending ? "Creating..." : "Create job"}
+        </button>
+      </div>
     </form>
   );
 }

@@ -67,7 +67,7 @@ export function JobUploadForm({
 
   return (
     <form
-      className="space-y-5 rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-6"
+      className="space-y-5 rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5 md:p-6"
       onSubmit={onSubmit}
     >
       <label className="block space-y-2">
@@ -90,7 +90,7 @@ export function JobUploadForm({
         <InlineAlert description={message} title="Uploaded" variant="success" />
       ) : null}
       <button
-        className="rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
         disabled={state === "uploading"}
         type="submit"
       >

@@ -28,26 +28,24 @@ export default async function JobSnapPage({
     <div className="space-y-8">
       <PageHeader
         eyebrow="Snap"
-        title={`Snap for ${result.job.client_name} - ${result.job.job_name}`}
-        description="Capture or choose one image and upload the original directly into this job’s Google Drive In-Process folder."
+        title="Upload to this job"
+        description={`${result.job.client_name} - ${result.job.job_name}`}
       />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="space-y-4">
         <JobUploadForm businessId={businessId} jobId={jobId} />
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-6">
-          <p className="text-sm text-[color:var(--muted)]">
-            Uploads go first to the job&apos;s{" "}
+        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
+          <p className="text-sm leading-6 text-[color:var(--muted)]">
+            Field-Snap uploads the original image to{" "}
             <span className="font-medium text-[color:var(--foreground)]">00 In-Process</span>{" "}
-            folder, then background processing takes over.
+            first. Background classification and Drive filing happen after the upload succeeds.
           </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link
-              className="rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
-              href={`/businesses/${businessId}/jobs/${jobId}`}
-            >
-              Back to job
-            </Link>
-          </div>
         </div>
+        <Link
+          className="inline-flex w-full items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-4 py-3 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)] sm:w-auto"
+          href={`/businesses/${businessId}/jobs/${jobId}`}
+        >
+          Back to job
+        </Link>
       </div>
     </div>
   );

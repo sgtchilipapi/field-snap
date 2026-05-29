@@ -1,5 +1,4 @@
-import { NewJobForm } from "@/components/business/new-job-form";
-import { JobList } from "@/components/business/job-list";
+import { JobsWorkspace } from "@/components/business/jobs-workspace";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { redirect } from "next/navigation";
@@ -49,14 +48,12 @@ export default async function BusinessJobsPage({
     <div className="space-y-8">
       <PageHeader
         eyebrow="Jobs"
-        title={`${details.business.name} jobs`}
-        description="Create jobs with a predictable Google Drive folder tree and review active or archived work by business."
+        title="Jobs"
+        description="Browse active work first, then search, filter, or create a new job without leaving the list."
       />
-      {details.membership.role === "owner_admin" ? (
-        <NewJobForm businessId={businessId} categories={categories} />
-      ) : null}
-      <JobList
+      <JobsWorkspace
         businessId={businessId}
+        canCreateJob={details.membership.role === "owner_admin"}
         categories={categories}
         currentStatus={selectedStatus}
         jobs={jobsResult.jobs}
@@ -73,7 +70,7 @@ export default async function BusinessJobsPage({
           description={
             searchQuery || selectedCategoryId || selectedStatus !== "active"
               ? "Adjust the status, category, or search text to widen the list."
-              : "Create the first job to build the category-specific Drive folder tree for this business."
+              : "Create the first job to start the Drive folder structure for this business."
           }
         />
       ) : null}
