@@ -55,18 +55,18 @@ function MobileSheet({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[color:var(--muted)]">
+            {/* <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[color:var(--muted)]">
               New job
-            </p>
+            </p> */}
             <h2 className="mt-2 text-2xl font-semibold tracking-tight" id={titleId}>
               {title}
             </h2>
-            <p
+            {/* <p
               className="mt-2 text-sm leading-6 text-[color:var(--muted)]"
               id={descriptionId}
             >
               {description}
-            </p>
+            </p> */}
           </div>
           <button
             className="inline-flex h-11 min-w-[2.75rem] items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-4 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
@@ -109,7 +109,7 @@ export function JobsWorkspace({
         {canCreateJob ? (
           <div className="sticky bottom-[calc(var(--bottom-nav-offset)-1.5rem)] z-20 -mb-1 flex justify-end md:static md:mb-0">
             <button
-              className="inline-flex min-h-[3.5rem] items-center justify-center rounded-full bg-[color:var(--accent)] px-6 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(213,111,62,0.28)] transition hover:bg-[color:var(--accent-strong)] md:min-h-[3.25rem]"
+              className="inline-flex items-center justify-center rounded-full bg-[color:var(--accent)] px-6 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(213,111,62,0.28)] transition hover:bg-[color:var(--accent-strong)] md:min-h-[3.25rem]"
               onClick={() => setIsCreateOpen(true)}
               type="button"
             >

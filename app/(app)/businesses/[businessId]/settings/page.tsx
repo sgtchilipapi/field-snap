@@ -22,7 +22,11 @@ export default async function BusinessSettingsPage({
 }) {
   const session = await requireSession();
   const { businessId } = await params;
-  const [{ drive, drive_error: driveError, folders, folders_error: foldersError }, details, driveStatus] = await Promise.all([
+  const [
+    { folders, folders_error: foldersError },
+    details,
+    driveStatus
+  ] = await Promise.all([
     searchParams,
     requireBusinessPageAccess({
       businessId,
@@ -40,36 +44,17 @@ export default async function BusinessSettingsPage({
   const isOwner = details.membership.role === "owner_admin";
   const invitations = isOwner
     ? (
-        await listInvitationsForBusinessForOwner({
-          businessId,
-          userId: session.userId
-        })
-      ).map((invitation) => ({
-        ...invitation,
-        expires_at: invitation.expires_at.toISOString(),
-        created_at: invitation.created_at.toISOString(),
-        accepted_at: invitation.accepted_at?.toISOString() ?? null
-      }))
+      await listInvitationsForBusinessForOwner({
+        businessId,
+        userId: session.userId
+      })
+    ).map((invitation) => ({
+      ...invitation,
+      expires_at: invitation.expires_at.toISOString(),
+      created_at: invitation.created_at.toISOString(),
+      accepted_at: invitation.accepted_at?.toISOString() ?? null
+    }))
     : [];
-  const driveAlert = driveError
-    ? {
-        title: "Drive connection failed",
-        description: `Google Drive setup did not complete: ${driveError}.`,
-        variant: "danger" as const
-      }
-    : drive === "connected"
-      ? {
-          title: "Drive connected",
-          description: "Google Drive is connected and the business root folder is available.",
-          variant: "success" as const
-        }
-      : {
-          title: driveConnected ? "Drive connected" : "Drive not connected",
-          description: driveConnected
-            ? "This business already has an active Drive connection."
-            : "Connect the owner's Google Drive next so Field-Snap can create and manage the business root folder.",
-          variant: driveConnected ? ("success" as const) : ("info" as const)
-        };
   const needsReconnect =
     driveStatus.connectionStatus === "error" || driveStatus.connectionStatus === "revoked";
   return (
@@ -77,9 +62,9 @@ export default async function BusinessSettingsPage({
       <PageHeader
         eyebrow="Business settings"
         title={details.business.name}
-        description="Connect the owner's Google Drive for this business and confirm the root folder Field-Snap will manage."
+      // description="Connect the owner's Google Drive for this business and confirm the root folder Field-Snap will manage."
       />
-      <InlineAlert title={driveAlert.title} description={driveAlert.description} variant={driveAlert.variant} />
+      {/* <InlineAlert title={driveAlert.title} description={driveAlert.description} variant={driveAlert.variant} /> */}
       {foldersError ? (
         <InlineAlert
           title="Folder repair failed"
@@ -97,25 +82,34 @@ export default async function BusinessSettingsPage({
         <div className="space-y-4 rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Google Drive connection</h2>
-              <p className="mt-2 text-sm text-[color:var(--muted)]">
-                {needsReconnect
-                  ? "Drive access needs attention. Reconnect the owner account so Field-Snap can keep uploading, filing, and reviewing documents."
-                  : driveConnected
-                  ? "Reconnect to refresh token material or confirm access to the existing business root folder."
-                  : "Authorize Drive access with the owner account. Field-Snap will create or reuse one root folder for this business."}
-              </p>
+              <h2 className="text-lg font-semibold">Google Drive is { driveConnected
+                ? needsReconnect
+                  ? "needing connection refresh."
+                  : "connected."
+                : "disconnected"}</h2>
+
             </div>
-            <form action={`/api/businesses/${businessId}/drive/connect`} method="post">
+            <form action={`/api/businesses/${businessId}/drive/connect`} method="post" className="space-x-2">
               <button
-                className="rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90"
+                className={`rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90 display=${driveConnected ? "block" : "none"}`}
                 type="submit"
               >
-                {driveConnected ? "Reconnect Google Drive" : "Connect Google Drive"}
+                {driveConnected ? needsReconnect ? "Refresh Connection" : "Connected" : "Connect"}
               </button>
+              {driveStatus.driveOpenUrl ? (
+                <Link
+                  className="inline-flex rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
+                  href={driveStatus.driveOpenUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Open in Drive
+                </Link>
+              ) : null}
             </form>
+
           </div>
-          {driveConnected ? (
+          {/* {driveConnected ? (
             <div className="flex flex-col gap-3 border-t border-[color:var(--border)] pt-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h3 className="text-base font-semibold">Default folder template</h3>
@@ -132,10 +126,10 @@ export default async function BusinessSettingsPage({
                 </button>
               </form>
             </div>
-          ) : null}
+          ) : null} */}
         </div>
       ) : null}
-      <dl className="grid gap-4 md:grid-cols-2">
+      {/* <dl className="grid gap-4 md:grid-cols-2">
         <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
           <dt className="text-sm text-[color:var(--muted)]">Role</dt>
           <dd className="mt-2 text-lg font-semibold">{details.membership.role}</dd>
@@ -166,17 +160,8 @@ export default async function BusinessSettingsPage({
             {details.business.general_docs_folder_id ?? "Not created yet"}
           </dd>
         </div>
-      </dl>
-      {driveStatus.driveOpenUrl ? (
-        <Link
-          className="inline-flex rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
-          href={driveStatus.driveOpenUrl}
-          rel="noreferrer"
-          target="_blank"
-        >
-          Open in Drive
-        </Link>
-      ) : null}
+      </dl> */}
+
       {isOwner ? <InvitationManager businessId={businessId} invitations={invitations} /> : null}
     </div>
   );

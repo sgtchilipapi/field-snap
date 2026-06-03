@@ -42,7 +42,7 @@ export function NewJobForm({
       )}
     >
       <div className="grid gap-5 md:grid-cols-2">
-        <FormField label="Category">
+        <FormField label="">
           <select
             className="w-full rounded-2xl border border-[color:var(--border)] bg-white px-4 py-3 outline-none transition focus:border-[color:var(--foreground)]"
             disabled={creatingCustomCategory}
@@ -58,8 +58,8 @@ export function NewJobForm({
           </select>
         </FormField>
         <FormField
-          label="Custom category"
-          hint="Use this only if the job belongs in a new category folder."
+          label=""
+          hint=""
         >
           <input
             className="w-full rounded-2xl border border-[color:var(--border)] bg-white px-4 py-3 outline-none transition focus:border-[color:var(--foreground)]"
@@ -70,37 +70,37 @@ export function NewJobForm({
                 setCreatingCustomCategory(false);
               }
             }}
-            placeholder="Roofing"
+            placeholder="Specify category if not listed above."
             type="text"
           />
         </FormField>
-        <FormField label="Client name">
+        <FormField label="">
           <input
             className="w-full rounded-2xl border border-[color:var(--border)] bg-white px-4 py-3 outline-none transition focus:border-[color:var(--foreground)]"
             name="client_name"
-            placeholder="Smith Residence"
+            placeholder="Client Name"
             required
             type="text"
           />
         </FormField>
-        <FormField label="Job name">
+        <FormField label="">
           <input
             className="w-full rounded-2xl border border-[color:var(--border)] bg-white px-4 py-3 outline-none transition focus:border-[color:var(--foreground)]"
             name="job_name"
-            placeholder="Backyard Cleanup"
+            placeholder="Job Name"
             required
             type="text"
           />
         </FormField>
-        <FormField label="Address">
+        <FormField label="">
           <input
             className="w-full rounded-2xl border border-[color:var(--border)] bg-white px-4 py-3 outline-none transition focus:border-[color:var(--foreground)]"
             name="address"
-            placeholder="123 Main St"
+            placeholder="Address"
             type="text"
           />
         </FormField>
-        <FormField label="Job date">
+        <FormField label="" hint="Job start date">
           <input
             className="w-full rounded-2xl border border-[color:var(--border)] bg-white px-4 py-3 outline-none transition focus:border-[color:var(--foreground)]"
             defaultValue={getTodayForDateInput()}

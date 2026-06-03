@@ -13,10 +13,10 @@ export function NewBusinessForm() {
 
   return (
     <form action={formAction} className="space-y-5 rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-6">
-      <div className="space-y-2">
-        <label className="text-sm font-medium" htmlFor="business-name">
+      <div className="space-y-0">
+        {/* <label className="text-sm font-medium" htmlFor="business-name">
           Business name
-        </label>
+        </label> */}
         <input
           className="w-full rounded-2xl border border-[color:var(--border)] bg-white px-4 py-3 outline-none transition focus:border-[color:var(--foreground)]"
           id="business-name"
@@ -34,7 +34,7 @@ export function NewBusinessForm() {
         disabled={pending}
         type="submit"
       >
-        {pending ? "Creating..." : "Create business"}
+        {pending ? "Setting up..." : "Enter"}
       </button>
     </form>
   );

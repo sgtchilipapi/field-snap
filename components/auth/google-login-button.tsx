@@ -11,7 +11,7 @@ export function GoogleLoginButton({ href = "/auth/google" }: { href?: string }) 
       href={href}
       onClick={() => setIsLoading(true)}
     >
-      {isLoading ? "Redirecting to Google..." : "Continue with Google"}
+      {isLoading ? "Redirecting to Google..." : "Sign-in with Google"}
     </a>
   );
 }

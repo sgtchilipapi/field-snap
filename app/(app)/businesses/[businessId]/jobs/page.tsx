@@ -46,11 +46,6 @@ export default async function BusinessJobsPage({
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        eyebrow="Jobs"
-        title="Jobs"
-        description="Browse active work first, then search, filter, or create a new job without leaving the list."
-      />
       <JobsWorkspace
         businessId={businessId}
         canCreateJob={details.membership.role === "owner_admin"}

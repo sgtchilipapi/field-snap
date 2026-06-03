@@ -31,7 +31,6 @@ export default async function BusinessLayout({
         <BusinessTopBar
           businesses={businesses}
           currentBusinessId={businessId}
-          currentBusinessName={details.business.name}
           role={details.membership.role}
         />
       }
