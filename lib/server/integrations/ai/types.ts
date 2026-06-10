@@ -20,6 +20,11 @@ export type AIProviderClassificationInput = {
   allowedTargetFolders: AllowedTargetFolder[];
 };
 
+export type AIClassificationNormalizationErrorCode =
+  | "invalid_json"
+  | "schema_validation_failed"
+  | "unsupported_folder_key";
+
 export type AIClassificationResult = {
   document_type: string;
   target_folder_key: string;
@@ -35,6 +40,8 @@ export type AIClassificationResult = {
   reason: string;
   raw_provider_payload: unknown;
   valid: boolean;
+  normalization_error_code: AIClassificationNormalizationErrorCode | null;
+  normalization_error_details: unknown | null;
 };
 
 export interface AIProvider {

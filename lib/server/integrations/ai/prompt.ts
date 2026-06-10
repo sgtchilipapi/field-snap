@@ -23,6 +23,10 @@ export function buildDocumentClassificationPrompt(input: AIProviderClassificatio
     "Use only the allowed target folders provided in the context.",
     "Do not assign accounting categories, payment status, or any bookkeeping treatment beyond the requested fields.",
     "If the document is ambiguous, set needs_review to true and explain why briefly.",
+    "Use needs_review=false only when the image is clear enough to auto-file into a non-review folder with confidence of at least 0.90.",
+    "Routing hints: retail receipts -> receipts; vendor bills asking the business to pay -> vendor_bills; invoices issued to customers -> customer_invoices; worksite or material photos -> job_photos; signed agreements -> contracts; permits -> permits; change orders -> change_orders; equipment-related documents -> equipment.",
+    "For general capture context, map insurance, licenses, tax, payroll, bank/credit-card, loans/financing, and contracts/legal documents to the matching allowed folder key.",
+    "If no allowed folder clearly fits, use target_folder_key needs_review and set needs_review to true.",
     "Use ISO dates when present. Use null for fields you cannot determine.",
     "Allowed document types: receipt, vendor_bill, customer_invoice, job_photo, contract, permit, change_order, equipment, insurance, license, tax_document, payroll_document, bank_credit_card_document, loan_financing_document, legal_document, other.",
     "",
@@ -41,7 +45,7 @@ export function buildDocumentClassificationPrompt(input: AIProviderClassificatio
         currency: "USD",
         invoice_number: null,
         due_date: null,
-        confidence: 0.93,
+        confidence: 0.97,
         needs_review: false,
         reason:
           "Image appears to be a retail purchase receipt with vendor, date, and total amount visible."

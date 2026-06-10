@@ -107,7 +107,8 @@ Other
 
 ```text
 confidence >= 0.95 -> auto-file and allow rename
-confidence < 0.95  -> route to Needs Review
+confidence >= 0.90 and < 0.95 -> auto-file and do not rename
+confidence < 0.90 -> route to Needs Review
 ```
 
 ### Route structure
@@ -488,9 +489,9 @@ Implement
 4. Fetch the original file bytes from Google Drive using the stored Drive file id.
 5. Call the AI provider with the correct capture context and allowed folders.
 6. Persist the raw AI payload and normalized fields back onto the `documents` row.
-7. Apply the confidence rule exactly: `confidence >= 0.95` auto-files; anything lower routes to review.
-8. If the outcome is high-confidence and valid, move the file from `00 In-Process` to the selected target folder.
-9. Only after a successful move, optionally rename the file if the AI suggested a filename and the filename is safe after sanitization.
+7. Apply the confidence rule exactly: `confidence >= 0.90` auto-files; `confidence >= 0.95` also allows rename; anything lower routes to review.
+8. If the outcome is valid, not marked `needs_review`, and high enough confidence, move the file from `00 In-Process` to the selected target folder.
+9. Only after a successful move, optionally rename the file if the AI suggested a filename, the filename is safe after sanitization, and confidence is at least `0.95`.
 10. Store sanitized filenames only. Strip or replace illegal characters and cap filename length at 120 characters.
 11. On successful auto-file, update `current_drive_folder_id`, `current_filename`, `target_folder_key`, `document_type`, AI metadata fields, and `status='auto_filed'`.
 12. On a low-confidence but otherwise valid classification, move the file to the correct `needs_review` folder for that context, update metadata fields, and set `status='needs_review'`.

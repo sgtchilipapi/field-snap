@@ -99,7 +99,10 @@ export class GeminiAIProvider implements AIProvider {
       return normalizeAIClassificationResult({
         rawProviderPayload: candidateText,
         allowedTargetFolders: input.allowedTargetFolders,
-        captureContext: input.captureContext
+        captureContext: input.captureContext,
+        parseFailure: {
+          code: "invalid_json"
+        }
       });
     }
   }

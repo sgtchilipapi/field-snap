@@ -678,7 +678,7 @@ Gemini must return strict JSON:
   "currency": "USD",
   "invoice_number": null,
   "due_date": null,
-  "confidence": 0.93,
+  "confidence": 0.97,
   "needs_review": false,
   "reason": "Image appears to be a retail purchase receipt with vendor, date, and total amount visible."
 }
@@ -711,21 +711,15 @@ confidence >= 0.90 and < 0.95 → auto-file but do not rename
 confidence < 0.90 → Needs Review
 ```
 
-Simpler version:
-
-```text
->= 0.95 auto-file
-< 0.95 Needs Review
-```
-
 Recommended MVP:
 
 ```text
->= 0.95 auto-file
-< 0.95 Needs Review
+>= 0.95 auto-file and rename
+>= 0.90 and < 0.95 auto-file without rename
+< 0.90 Needs Review
 ```
 
-Reason: wrong filing creates more damage than review volume.
+Reason: this preserves a safer rename threshold while reducing unnecessary review volume for clear but not perfect captures.
 
 ## 9.6 No accounting treatment
 

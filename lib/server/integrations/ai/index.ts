@@ -5,6 +5,7 @@ export {
   parseProviderJsonPayload
 } from "@/lib/server/integrations/ai/classification";
 export type {
+  AIClassificationNormalizationErrorCode,
   AIClassificationResult,
   AIProvider,
   AIProviderClassificationInput,

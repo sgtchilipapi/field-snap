@@ -97,7 +97,8 @@ describe("GeminiAIProvider", () => {
       suggested_filename: "Home Depot - 182.44 - 2026-05-21.jpg",
       confidence: 0.98,
       needs_review: false,
-      valid: true
+      valid: true,
+      normalization_error_code: null
     });
   });
 
@@ -110,7 +111,8 @@ describe("GeminiAIProvider", () => {
       document_type: "job_photo",
       target_folder_key: "job_photos",
       confidence: 1,
-      valid: true
+      valid: true,
+      normalization_error_code: null
     });
   });
 
@@ -124,7 +126,9 @@ describe("GeminiAIProvider", () => {
     expect(result).toMatchObject({
       target_folder_key: "needs_review",
       needs_review: true,
-      valid: false
+      valid: false,
+      reason: "AI returned invalid JSON and requires review.",
+      normalization_error_code: "invalid_json"
     });
   });
 
@@ -144,7 +148,9 @@ describe("GeminiAIProvider", () => {
     expect(result).toMatchObject({
       target_folder_key: "needs_review",
       needs_review: true,
-      valid: false
+      valid: false,
+      reason: "AI output failed schema validation and requires review.",
+      normalization_error_code: "schema_validation_failed"
     });
   });
 
@@ -164,7 +170,10 @@ describe("GeminiAIProvider", () => {
       document_type: "receipt",
       target_folder_key: "needs_review",
       needs_review: true,
-      valid: false
+      valid: false,
+      reason:
+        'AI selected unsupported target folder key "bank_credit_card" for job capture context and requires review.',
+      normalization_error_code: "unsupported_folder_key"
     });
   });
 });

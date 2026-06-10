@@ -17,7 +17,11 @@ import { getJobForBusiness } from "@/lib/server/data/jobs";
 import { findUserById } from "@/lib/server/data/users";
 import type { DocumentRow } from "@/lib/server/db/schema";
 import { AuthFlowError } from "@/lib/server/auth/errors";
-import type { AIProvider, AllowedTargetFolder } from "@/lib/server/integrations/ai";
+import type {
+  AIClassificationResult,
+  AIProvider,
+  AllowedTargetFolder
+} from "@/lib/server/integrations/ai";
 import { GeminiAIProvider } from "@/lib/server/integrations/ai";
 import {
   getGoogleDriveFileBytes,
@@ -29,10 +33,20 @@ import { decryptSecret } from "@/lib/server/security/encryption";
 import { getBusinessById } from "@/lib/server/data/businesses";
 import { markDriveConnectionIssue } from "@/lib/server/services/drive-connection-health";
 
-const AUTO_FILE_CONFIDENCE_THRESHOLD = 0.95;
+const AUTO_FILE_CONFIDENCE_THRESHOLD = 0.9;
+const AUTO_RENAME_CONFIDENCE_THRESHOLD = 0.95;
 const MAX_FILENAME_LENGTH = 120;
 const ILLEGAL_FILENAME_CHARACTERS = /[<>:"/\\|?*\u0000-\u001f]/g;
 const MULTISPACE_PATTERN = /\s+/g;
+
+type DocumentRoutingReason =
+  | "auto_filed"
+  | "review_invalid_output"
+  | "review_low_confidence"
+  | "review_missing_target_folder"
+  | "review_model_requested_review"
+  | "review_needs_review_target"
+  | "review_unsupported_folder";
 
 export class DocumentProcessingError extends Error {
   constructor(
@@ -198,7 +212,85 @@ async function recordRoutingAudit(input: {
   });
 }
 
-async function moveToNeedsReview(input: {
+function resolveRoutingDecision(input: {
+  classification: AIClassificationResult;
+  targetFolder: (AllowedTargetFolder & { driveFolderId: string }) | null;
+}) {
+  if (!input.classification.valid) {
+    return {
+      shouldAutoFile: false,
+      shouldRename: false,
+      routingReason:
+        input.classification.normalization_error_code === "unsupported_folder_key"
+          ? "review_unsupported_folder"
+          : "review_invalid_output"
+    } satisfies {
+      shouldAutoFile: boolean;
+      shouldRename: boolean;
+      routingReason: DocumentRoutingReason;
+    };
+  }
+
+  if (input.classification.target_folder_key === "needs_review") {
+    return {
+      shouldAutoFile: false,
+      shouldRename: false,
+      routingReason: "review_needs_review_target"
+    } satisfies {
+      shouldAutoFile: boolean;
+      shouldRename: boolean;
+      routingReason: DocumentRoutingReason;
+    };
+  }
+
+  if (input.classification.needs_review) {
+    return {
+      shouldAutoFile: false,
+      shouldRename: false,
+      routingReason: "review_model_requested_review"
+    } satisfies {
+      shouldAutoFile: boolean;
+      shouldRename: boolean;
+      routingReason: DocumentRoutingReason;
+    };
+  }
+
+  if (!input.targetFolder) {
+    return {
+      shouldAutoFile: false,
+      shouldRename: false,
+      routingReason: "review_missing_target_folder"
+    } satisfies {
+      shouldAutoFile: boolean;
+      shouldRename: boolean;
+      routingReason: DocumentRoutingReason;
+    };
+  }
+
+  if (input.classification.confidence < AUTO_FILE_CONFIDENCE_THRESHOLD) {
+    return {
+      shouldAutoFile: false,
+      shouldRename: false,
+      routingReason: "review_low_confidence"
+    } satisfies {
+      shouldAutoFile: boolean;
+      shouldRename: boolean;
+      routingReason: DocumentRoutingReason;
+    };
+  }
+
+  return {
+    shouldAutoFile: true,
+    shouldRename: input.classification.confidence >= AUTO_RENAME_CONFIDENCE_THRESHOLD,
+    routingReason: "auto_filed"
+  } satisfies {
+    shouldAutoFile: boolean;
+    shouldRename: boolean;
+    routingReason: DocumentRoutingReason;
+  };
+}
+
+async function moveDriveFileToFolder(input: {
   accessToken: string;
   fileId: string;
   fromFolderId: string;
@@ -281,7 +373,7 @@ async function finalizeFailedProcessing(input: {
 
   if (input.attemptNeedsReviewMove) {
     try {
-      const moveResult = await moveToNeedsReview({
+      const moveResult = await moveDriveFileToFolder({
         accessToken: input.accessToken,
         fileId: input.document.current_drive_file_id,
         fromFolderId: input.document.current_drive_folder_id,
@@ -348,6 +440,20 @@ export async function processDocumentProcessingJob(
       allowedFolders: context.allowedFolders
     });
 
+    const targetFolder = context.allowedFolders.find(
+      (folder) => folder.key === classification.target_folder_key
+    ) ?? null;
+    const routingDecision = resolveRoutingDecision({
+      classification,
+      targetFolder
+    });
+    const { shouldAutoFile, shouldRename, routingReason } = routingDecision;
+
+    const destinationFolderId = shouldAutoFile
+      ? targetFolder?.driveFolderId
+      : context.needsReviewFolder.driveFolderId;
+    const nextStatus: DocumentRow["status"] = shouldAutoFile ? "auto_filed" : "needs_review";
+
     await recordRoutingAudit({
       businessId: context.business.id,
       actorUserId: null,
@@ -357,40 +463,48 @@ export async function processDocumentProcessingJob(
         document_type: classification.document_type,
         target_folder_key: classification.target_folder_key,
         confidence: classification.confidence,
-        valid: classification.valid
+        needs_review: classification.needs_review,
+        valid: classification.valid,
+        normalization_error_code: classification.normalization_error_code,
+        routing_reason: routingReason
       }
     });
 
-    if (!classification.valid) {
-      logWarn("AI invalid response", {
-        businessId: context.business.id,
-        documentId: context.document.id,
-        correlationId: input.correlationId
-      });
-    } else {
+    if (routingReason === "auto_filed") {
       logInfo("AI classification succeeded", {
         businessId: context.business.id,
         documentId: context.document.id,
         correlationId: input.correlationId,
         targetFolderKey: classification.target_folder_key,
-        confidence: classification.confidence
+        confidence: classification.confidence,
+        needsReview: classification.needs_review,
+        routingReason,
+        renameEligible: shouldRename
+      });
+    } else if (routingReason === "review_low_confidence") {
+      logInfo("AI classification routed to review for low confidence", {
+        businessId: context.business.id,
+        documentId: context.document.id,
+        correlationId: input.correlationId,
+        targetFolderKey: classification.target_folder_key,
+        confidence: classification.confidence,
+        needsReview: classification.needs_review,
+        routingReason
+      });
+    } else {
+      logWarn("AI classification routed to review", {
+        businessId: context.business.id,
+        documentId: context.document.id,
+        correlationId: input.correlationId,
+        targetFolderKey: classification.target_folder_key,
+        allowedTargetFolderKeys: context.allowedFolders.map((folder) => folder.key),
+        confidence: classification.confidence,
+        needsReview: classification.needs_review,
+        routingReason,
+        normalizationErrorCode: classification.normalization_error_code,
+        normalizationErrorDetails: classification.normalization_error_details
       });
     }
-
-    const targetFolder = context.allowedFolders.find(
-      (folder) => folder.key === classification.target_folder_key
-    );
-
-    const shouldAutoFile =
-      classification.valid &&
-      classification.confidence >= AUTO_FILE_CONFIDENCE_THRESHOLD &&
-      classification.target_folder_key !== "needs_review" &&
-      Boolean(targetFolder);
-
-    const destinationFolderId = shouldAutoFile
-      ? targetFolder?.driveFolderId
-      : context.needsReviewFolder.driveFolderId;
-    const nextStatus: DocumentRow["status"] = shouldAutoFile ? "auto_filed" : "needs_review";
 
     if (!destinationFolderId) {
       throw new DocumentProcessingError("Destination folder is unavailable.", "invalid_state");
@@ -399,7 +513,7 @@ export async function processDocumentProcessingJob(
     let moveResult: { id: string; name: string } | null = null;
 
     try {
-      moveResult = await moveToNeedsReview({
+      moveResult = await moveDriveFileToFolder({
         accessToken,
         fileId: context.document.current_drive_file_id,
         fromFolderId: context.document.current_drive_folder_id,
@@ -431,7 +545,7 @@ export async function processDocumentProcessingJob(
 
     let currentFilename = moveResult?.name ?? context.document.current_filename;
     const sanitizedFilename =
-      shouldAutoFile && classification.suggested_filename
+      shouldRename && classification.suggested_filename
         ? sanitizeFilename(
             classification.suggested_filename,
             getFileExtension(context.document.current_filename)
@@ -478,7 +592,8 @@ export async function processDocumentProcessingJob(
           status: nextStatus,
           target_folder_key: classification.target_folder_key,
           confidence: classification.confidence,
-          valid: classification.valid
+          valid: classification.valid,
+          routing_reason: routingReason
         }
       });
     }
@@ -487,7 +602,8 @@ export async function processDocumentProcessingJob(
       businessId: context.business.id,
       documentId: context.document.id,
       correlationId: input.correlationId,
-      status: nextStatus
+      status: nextStatus,
+      routingReason
     });
 
     return {

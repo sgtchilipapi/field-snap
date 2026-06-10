@@ -568,6 +568,7 @@ Do not invent values.
 If unsure, set needs_review=true.
 Only choose a target_folder_key from the allowed list.
 Do not decide accounting treatment.
+Use needs_review=false only when the image is clear enough to auto-file into a non-review folder.
 ```
 
 User payload:
@@ -611,9 +612,11 @@ invalid JSON
 missing document_type
 missing confidence
 folder key not allowed
-confidence < threshold
+confidence < 0.90
+needs_review=true
 document_type unknown
 target folder is impossible for context
+target folder is needs_review
 ```
 
 Example impossible:

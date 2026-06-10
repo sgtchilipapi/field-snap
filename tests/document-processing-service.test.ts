@@ -295,7 +295,9 @@ describe("document-processing-service", () => {
         needs_review: false,
         reason: "Receipt",
         raw_provider_payload: { ok: true },
-        valid: true
+        valid: true,
+        normalization_error_code: null,
+        normalization_error_details: null
       })
     );
 
@@ -324,8 +326,60 @@ describe("document-processing-service", () => {
         failureReason: null
       })
     );
+    expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "document.ai_classified",
+        newValue: expect.objectContaining({
+          routing_reason: "auto_filed"
+        })
+      })
+    );
     expect(mockedCompleteDocumentProcessingJob).toHaveBeenCalledWith("processing-job-1");
     expect(mockedRecordAuditEvent).toHaveBeenCalled();
+  });
+
+  it("auto-files a 0.93 classification without renaming the file", async () => {
+    const provider = createProvider(
+      Promise.resolve({
+        document_type: "receipt",
+        target_folder_key: "receipts",
+        suggested_filename: "Home Depot - 182.44 - 2026-05-21.jpg",
+        vendor_or_party: "Home Depot",
+        document_date: "2026-05-21",
+        amount: 182.44,
+        currency: "USD",
+        invoice_number: null,
+        due_date: null,
+        confidence: 0.93,
+        needs_review: false,
+        reason: "Receipt",
+        raw_provider_payload: { ok: true },
+        valid: true,
+        normalization_error_code: null,
+        normalization_error_details: null
+      })
+    );
+
+    const result = await runNextDocumentProcessingJob(provider as never);
+
+    expect(result).toEqual({
+      jobId: "processing-job-1",
+      documentId: "document-1",
+      status: "auto_filed"
+    });
+    expect(mockedMoveGoogleDriveFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toFolderId: "receipts-1"
+      })
+    );
+    expect(mockedRenameGoogleDriveFile).not.toHaveBeenCalled();
+    expect(mockedUpdateDocumentProcessingState).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: "auto_filed",
+        currentDriveFolderId: "receipts-1",
+        failureReason: null
+      })
+    );
   });
 
   it("routes a low-confidence result to Needs Review and preserves AI metadata", async () => {
@@ -341,10 +395,12 @@ describe("document-processing-service", () => {
         invoice_number: null,
         due_date: null,
         confidence: 0.62,
-        needs_review: true,
-        reason: "Ambiguous image",
+        needs_review: false,
+        reason: "Low-confidence job photo classification",
         raw_provider_payload: { ok: true },
-        valid: true
+        valid: true,
+        normalization_error_code: null,
+        normalization_error_details: null
       })
     );
 
@@ -372,6 +428,59 @@ describe("document-processing-service", () => {
         status: "needs_review",
         currentDriveFolderId: "needs-review-1",
         failureReason: null
+      })
+    );
+    expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "document.ai_classified",
+        newValue: expect.objectContaining({
+          routing_reason: "review_low_confidence"
+        })
+      })
+    );
+  });
+
+  it("routes a high-confidence classification to review when the model requests review", async () => {
+    const provider = createProvider(
+      Promise.resolve({
+        document_type: "job_photo",
+        target_folder_key: "job_photos",
+        suggested_filename: "site-progress.jpg",
+        vendor_or_party: null,
+        document_date: "2026-05-21",
+        amount: null,
+        currency: null,
+        invoice_number: null,
+        due_date: null,
+        confidence: 0.98,
+        needs_review: true,
+        reason: "The image is partially obscured and should be reviewed.",
+        raw_provider_payload: { ok: true },
+        valid: true,
+        normalization_error_code: null,
+        normalization_error_details: null
+      })
+    );
+
+    const result = await runNextDocumentProcessingJob(provider as never);
+
+    expect(result).toEqual({
+      jobId: "processing-job-1",
+      documentId: "document-1",
+      status: "needs_review"
+    });
+    expect(mockedMoveGoogleDriveFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toFolderId: "needs-review-1"
+      })
+    );
+    expect(mockedRenameGoogleDriveFile).not.toHaveBeenCalled();
+    expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "document.ai_classified",
+        newValue: expect.objectContaining({
+          routing_reason: "review_model_requested_review"
+        })
       })
     );
   });
@@ -423,7 +532,9 @@ describe("document-processing-service", () => {
         needs_review: false,
         reason: "Tax notice",
         raw_provider_payload: { ok: true },
-        valid: true
+        valid: true,
+        normalization_error_code: null,
+        normalization_error_details: null
       })
     );
 
@@ -445,6 +556,46 @@ describe("document-processing-service", () => {
         status: "auto_filed",
         currentDriveFolderId: "tax-1",
         failureReason: null
+      })
+    );
+  });
+
+  it("routes a high-confidence needs-review target into Needs Review", async () => {
+    const provider = createProvider(
+      Promise.resolve({
+        document_type: "receipt",
+        target_folder_key: "needs_review",
+        suggested_filename: "receipt.jpg",
+        vendor_or_party: "Home Depot",
+        document_date: "2026-05-21",
+        amount: 182.44,
+        currency: "USD",
+        invoice_number: null,
+        due_date: null,
+        confidence: 0.99,
+        needs_review: true,
+        reason: "The receipt is too cropped to file confidently.",
+        raw_provider_payload: { ok: true },
+        valid: true,
+        normalization_error_code: null,
+        normalization_error_details: null
+      })
+    );
+
+    const result = await runNextDocumentProcessingJob(provider as never);
+
+    expect(result).toEqual({
+      jobId: "processing-job-1",
+      documentId: "document-1",
+      status: "needs_review"
+    });
+    expect(mockedRenameGoogleDriveFile).not.toHaveBeenCalled();
+    expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "document.ai_classified",
+        newValue: expect.objectContaining({
+          routing_reason: "review_needs_review_target"
+        })
       })
     );
   });
@@ -509,7 +660,9 @@ describe("document-processing-service", () => {
         needs_review: false,
         reason: "Receipt",
         raw_provider_payload: { ok: true },
-        valid: true
+        valid: true,
+        normalization_error_code: null,
+        normalization_error_details: null
       })
     );
     mockedMoveGoogleDriveFile.mockRejectedValue(new Error("Google Drive file move failed: 500"));

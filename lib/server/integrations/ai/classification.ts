@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type {
   AIClassificationResult,
+  AIClassificationNormalizationErrorCode,
   AllowedTargetFolder,
   DocumentCaptureContext
 } from "@/lib/server/integrations/ai/types";
@@ -52,6 +53,8 @@ function buildFallbackResult(input: {
   reason: string;
   documentType?: string | null;
   confidence?: number | null;
+  normalizationErrorCode: AIClassificationNormalizationErrorCode;
+  normalizationErrorDetails?: unknown;
 }): AIClassificationResult {
   return {
     document_type: input.documentType && DOCUMENT_TYPES.includes(input.documentType as never)
@@ -69,7 +72,9 @@ function buildFallbackResult(input: {
     needs_review: true,
     reason: input.reason,
     raw_provider_payload: input.rawProviderPayload,
-    valid: false
+    valid: false,
+    normalization_error_code: input.normalizationErrorCode,
+    normalization_error_details: input.normalizationErrorDetails ?? null
   };
 }
 
@@ -84,13 +89,34 @@ export function normalizeAIClassificationResult(input: {
   rawProviderPayload: unknown;
   allowedTargetFolders: AllowedTargetFolder[];
   captureContext: DocumentCaptureContext;
+  parseFailure?:
+    | {
+        code: "invalid_json";
+        details?: unknown;
+      }
+    | undefined;
 }) {
+  if (input.parseFailure?.code === "invalid_json") {
+    return buildFallbackResult({
+      rawProviderPayload: input.rawProviderPayload,
+      reason: "AI returned invalid JSON and requires review.",
+      normalizationErrorCode: "invalid_json",
+      normalizationErrorDetails: input.parseFailure.details
+    });
+  }
+
   const parsed = providerResponseSchema.safeParse(input.rawProviderPayload);
 
   if (!parsed.success) {
     return buildFallbackResult({
       rawProviderPayload: input.rawProviderPayload,
-      reason: "AI output was invalid and requires review."
+      reason: "AI output failed schema validation and requires review.",
+      normalizationErrorCode: "schema_validation_failed",
+      normalizationErrorDetails: parsed.error.issues.map((issue) => ({
+        code: issue.code,
+        path: issue.path.join("."),
+        message: issue.message
+      }))
     });
   }
 
@@ -99,9 +125,14 @@ export function normalizeAIClassificationResult(input: {
   if (!allowedFolderKeys.has(parsed.data.target_folder_key)) {
     return buildFallbackResult({
       rawProviderPayload: input.rawProviderPayload,
-      reason: `AI selected an unsupported folder for ${input.captureContext} capture context and requires review.`,
+      reason: `AI selected unsupported target folder key "${parsed.data.target_folder_key}" for ${input.captureContext} capture context and requires review.`,
       documentType: parsed.data.document_type,
-      confidence: parsed.data.confidence
+      confidence: parsed.data.confidence,
+      normalizationErrorCode: "unsupported_folder_key",
+      normalizationErrorDetails: {
+        allowed_target_folder_keys: [...allowedFolderKeys],
+        target_folder_key: parsed.data.target_folder_key
+      }
     });
   }
 
@@ -119,6 +150,8 @@ export function normalizeAIClassificationResult(input: {
     needs_review: parsed.data.needs_review,
     reason: parsed.data.reason,
     raw_provider_payload: input.rawProviderPayload,
-    valid: true
+    valid: true,
+    normalization_error_code: null,
+    normalization_error_details: null
   } satisfies AIClassificationResult;
 }
