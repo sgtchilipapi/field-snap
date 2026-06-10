@@ -13,7 +13,7 @@ export default async function BusinessJobsPage({
 }: {
   params: Promise<{ businessId: string }>;
   searchParams: Promise<{
-    status?: "active" | "archived" | "all";
+    status?: "active" | "completed" | "archived" | "all";
     category?: string;
     search?: string;
   }>;
@@ -21,7 +21,7 @@ export default async function BusinessJobsPage({
   const session = await requireSession();
   const { businessId } = await params;
   const { status, category, search } = await searchParams;
-  const selectedStatus = status && ["active", "archived", "all"].includes(status) ? status : "active";
+  const selectedStatus = status && ["active", "completed", "archived", "all"].includes(status) ? status : "active";
   const selectedCategoryId = typeof category === "string" && category.trim().length > 0 ? category : "";
   const searchQuery = typeof search === "string" ? search.trim() : "";
   const [details, categories, jobsResult] = await Promise.all([
@@ -46,14 +46,16 @@ export default async function BusinessJobsPage({
 
   return (
     <div className="space-y-8">
+      <PageHeader
+        eyebrow="Jobs for"
+        title={details.business.name}
+        description="Create and manage jobs for this business."
+      />
       <JobsWorkspace
         businessId={businessId}
         canCreateJob={details.membership.role === "owner_admin"}
         categories={categories}
-        currentStatus={selectedStatus}
         jobs={jobsResult.jobs}
-        searchQuery={searchQuery}
-        selectedCategoryId={selectedCategoryId}
       />
       {jobsResult.jobs.length === 0 ? (
         <EmptyState

@@ -35,7 +35,7 @@ export default async function JobSnapPage({
         <JobUploadForm businessId={businessId} jobId={jobId} />
         <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
           <p className="text-sm leading-6 text-[color:var(--muted)]">
-            Field-Snap uploads the original image to{" "}
+            JobFyl uploads the original image to{" "}
             <span className="font-medium text-[color:var(--foreground)]">00 In-Process</span>{" "}
             first. Background classification and Drive filing happen after the upload succeeds.
           </p>

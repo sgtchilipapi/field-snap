@@ -55,18 +55,15 @@ function MobileSheet({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            {/* <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[color:var(--muted)]">
-              New job
-            </p> */}
             <h2 className="mt-2 text-2xl font-semibold tracking-tight" id={titleId}>
               {title}
             </h2>
-            {/* <p
+            <p
               className="mt-2 text-sm leading-6 text-[color:var(--muted)]"
               id={descriptionId}
             >
               {description}
-            </p> */}
+            </p>
           </div>
           <button
             className="inline-flex h-11 min-w-[2.75rem] items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-4 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
@@ -88,17 +85,11 @@ export function JobsWorkspace({
   businessId,
   categories,
   jobs,
-  currentStatus,
-  searchQuery,
-  selectedCategoryId,
   canCreateJob
 }: {
   businessId: string;
   categories: CategoryRow[];
   jobs: JobWithCategoryRow[];
-  currentStatus: "active" | "archived" | "all";
-  searchQuery: string;
-  selectedCategoryId: string;
   canCreateJob: boolean;
 }) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -118,14 +109,7 @@ export function JobsWorkspace({
           </div>
         ) : null}
 
-        <JobList
-          businessId={businessId}
-          categories={categories}
-          currentStatus={currentStatus}
-          jobs={jobs}
-          searchQuery={searchQuery}
-          selectedCategoryId={selectedCategoryId}
-        />
+        <JobList businessId={businessId} jobs={jobs} />
       </div>
 
       {isCreateOpen ? (

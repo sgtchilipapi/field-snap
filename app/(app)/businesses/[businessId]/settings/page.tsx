@@ -82,16 +82,16 @@ export default async function BusinessSettingsPage({
         <div className="space-y-4 rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Google Drive is { driveConnected
+              <h2 className="text-lg font-semibold">{ driveConnected
                 ? needsReconnect
-                  ? "needing connection refresh."
-                  : "connected."
-                : "disconnected"}</h2>
+                  ? "To continue, refresh the connection to your Google Drive."
+                  : "Drive is connected successfully."
+                : "To start, connect your Google Drive."}</h2>
 
             </div>
             <form action={`/api/businesses/${businessId}/drive/connect`} method="post" className="space-x-2">
               <button
-                className={`rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90 display=${driveConnected ? "block" : "none"}`}
+                className={`rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90 ${driveConnected ? "hidden" : ""}`}
                 type="submit"
               >
                 {driveConnected ? needsReconnect ? "Refresh Connection" : "Connected" : "Connect"}
@@ -103,7 +103,7 @@ export default async function BusinessSettingsPage({
                   rel="noreferrer"
                   target="_blank"
                 >
-                  Open in Drive
+                  See Drive Folder
                 </Link>
               ) : null}
             </form>

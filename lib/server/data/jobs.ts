@@ -94,7 +94,7 @@ export async function createJob(input: {
 
 export async function listJobsForBusiness(input: {
   businessId: string;
-  status?: "active" | "archived" | "all";
+  status?: "active" | "completed" | "archived" | "all";
   categoryId?: string | null;
   search?: string | null;
 }) {
@@ -229,11 +229,15 @@ export async function updateJob(input: {
   return rows[0] ? mapJob(rows[0]) : null;
 }
 
-export async function archiveJob(jobId: string, businessId: string) {
+export async function updateJobStatus(
+  jobId: string,
+  businessId: string,
+  status: JobRow["status"]
+) {
   const rows = await db<JobRow[]>`
     update jobs
     set
-      status = 'archived',
+      status = ${status},
       updated_at = now()
     where id = ${jobId}
       and business_id = ${businessId}
@@ -255,4 +259,8 @@ export async function archiveJob(jobId: string, businessId: string) {
   `;
 
   return rows[0] ? mapJob(rows[0]) : null;
+}
+
+export async function archiveJob(jobId: string, businessId: string) {
+  return updateJobStatus(jobId, businessId, "archived");
 }

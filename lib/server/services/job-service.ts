@@ -18,7 +18,8 @@ import {
   findActiveDuplicateJob,
   getJobForBusiness,
   listJobsForBusiness,
-  updateJob as updateJobRecord
+  updateJob as updateJobRecord,
+  updateJobStatus as updateJobStatusRecord
 } from "@/lib/server/data/jobs";
 import { decryptSecret } from "@/lib/server/security/encryption";
 import { createGoogleDriveFolderInParent } from "@/lib/server/integrations/google/drive";
@@ -57,6 +58,10 @@ export const updateJobSchema = z.object({
   job_name: z.string().trim().min(1, "Job name is required.").max(120, "Job name must be 120 characters or fewer."),
   address: z.string().trim().max(255, "Address must be 255 characters or fewer.").optional(),
   job_date: isoDateSchema
+});
+
+export const updateJobStatusSchema = z.object({
+  status: z.enum(["active", "completed", "archived"])
 });
 
 export class JobServiceError extends Error {
@@ -291,7 +296,7 @@ export async function createJobForBusiness(input: {
 export async function listJobsForUser(input: {
   businessId: string;
   userId: string;
-  status?: "active" | "archived" | "all";
+  status?: "active" | "completed" | "archived" | "all";
   categoryId?: string | null;
   search?: string | null;
 }) {
@@ -406,17 +411,58 @@ export async function updateJobForBusiness(input: {
 }
 
 export async function archiveJobForBusiness(businessId: string, jobId: string, userId: string) {
-  const authorization = await authorizeBusinessAccess({
+  return updateJobStatusForBusiness({
     businessId,
+    jobId,
     userId,
+    status: "archived"
+  });
+}
+
+export async function updateJobStatusForBusiness(input: {
+  businessId: string;
+  jobId: string;
+  userId: string;
+  status: unknown;
+}) {
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.userId,
     capability: "jobs:manage"
   });
 
   if (!authorization.allowed) {
-    throw new JobServiceError("Only owner-admin members can archive jobs.", "forbidden");
+    throw new JobServiceError("Only owner-admin members can change job status.", "forbidden");
   }
 
-  const job = await archiveJobRecord(jobId, businessId);
+  const existingJob = await getJobForBusiness(input.businessId, input.jobId);
+
+  if (!existingJob) {
+    throw new JobServiceError("Job not found.", "not_found");
+  }
+
+  const parsed = updateJobStatusSchema.parse({
+    status: input.status
+  });
+
+  if (parsed.status === "active" && existingJob.status !== "active") {
+    const duplicateId = await findActiveDuplicateJob({
+      businessId: input.businessId,
+      clientName: existingJob.client_name,
+      jobName: existingJob.job_name,
+      jobDate: existingJob.job_date,
+      excludeJobId: input.jobId
+    });
+
+    if (duplicateId) {
+      throw new JobServiceError("An active job with the same client, job name, and date already exists.", "duplicate");
+    }
+  }
+
+  const job =
+    parsed.status === "archived"
+      ? await archiveJobRecord(input.jobId, input.businessId)
+      : await updateJobStatusRecord(input.jobId, input.businessId, parsed.status);
 
   if (!job) {
     throw new JobServiceError("Job not found.", "not_found");

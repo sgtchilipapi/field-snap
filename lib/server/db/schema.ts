@@ -72,7 +72,7 @@ export type JobRow = {
   drive_folder_id: string;
   in_process_folder_id: string;
   needs_review_folder_id: string;
-  status: "active" | "archived";
+  status: "active" | "completed" | "archived";
   created_by_user_id: string;
   created_at: Date;
   updated_at: Date;

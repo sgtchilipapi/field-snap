@@ -1,53 +1,16 @@
 import Link from "next/link";
-import { cn } from "@/lib/utils";
-import type { CategoryRow } from "@/lib/server/db/schema";
 import type { JobWithCategoryRow } from "@/lib/server/data/jobs";
-
-function buildJobsHref(input: {
-  businessId: string;
-  status: "active" | "archived" | "all";
-  categoryId: string;
-  searchQuery: string;
-}) {
-  const params = new URLSearchParams();
-  params.set("status", input.status);
-
-  if (input.categoryId) {
-    params.set("category", input.categoryId);
-  }
-
-  if (input.searchQuery) {
-    params.set("search", input.searchQuery);
-  }
-
-  return `/businesses/${input.businessId}/jobs?${params.toString()}`;
-}
 
 export function JobList({
   businessId,
-  categories,
-  jobs,
-  currentStatus,
-  searchQuery,
-  selectedCategoryId
+  jobs
 }: {
   businessId: string;
-  categories: CategoryRow[];
   jobs: JobWithCategoryRow[];
-  currentStatus: "active" | "archived" | "all";
-  searchQuery: string;
-  selectedCategoryId: string;
 }) {
-  const selectedCategoryName =
-    categories.find((category) => category.id === selectedCategoryId)?.name ?? null;
-  const hasSearch = searchQuery.length > 0;
-  const hasFilters = currentStatus !== "active" || Boolean(selectedCategoryId);
-  const statusLabel =
-    currentStatus === "archived" ? "Archived" : currentStatus === "all" ? "All" : "Active";
-
   return (
     <div className="space-y-5">
-      <div className="space-y-3">
+      {/* <div className="space-y-3">
         <details className="surface-card overflow-hidden p-0">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 marker:hidden">
             <div>
@@ -184,7 +147,7 @@ export function JobList({
             </div>
           </form>
         </details>
-      </div>
+      </div> */}
 
       <div className="grid gap-4">
         {jobs.map((job) => (
@@ -204,6 +167,8 @@ export function JobList({
                       "inline-flex rounded-full px-3 py-1 text-xs font-medium",
                       job.status === "archived"
                         ? "bg-slate-200 text-slate-800"
+                        : job.status === "completed"
+                          ? "bg-amber-100 text-amber-900"
                         : "bg-emerald-100 text-emerald-800"
                     )}
                   >

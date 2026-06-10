@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { submitNewJob, type JobFormState } from "@/app/(app)/businesses/[businessId]/jobs/actions";
 import { FormField } from "@/components/ui/form-field";
 import { InlineAlert } from "@/components/ui/inline-alert";
@@ -24,7 +24,6 @@ export function NewJobForm({
   categories: CategoryRow[];
   variant?: "card" | "sheet";
 }) {
-  const [creatingCustomCategory, setCreatingCustomCategory] = useState(false);
   const [state, formAction, pending] = useActionState(
     submitNewJob.bind(null, businessId),
     initialState
@@ -45,7 +44,6 @@ export function NewJobForm({
         <FormField label="">
           <select
             className="w-full rounded-2xl border border-[color:var(--border)] bg-white px-4 py-3 outline-none transition focus:border-[color:var(--foreground)]"
-            disabled={creatingCustomCategory}
             name="category_id"
             defaultValue=""
           >
@@ -57,7 +55,8 @@ export function NewJobForm({
             ))}
           </select>
         </FormField>
-        <FormField
+        {/** SPECIFY CUSTOM CATEGORY (DEPRECATED. JUST USE 'OTHERS'.) */}
+        {/* <FormField
           label=""
           hint=""
         >
@@ -73,7 +72,7 @@ export function NewJobForm({
             placeholder="Specify category if not listed above."
             type="text"
           />
-        </FormField>
+        </FormField> */}
         <FormField label="">
           <input
             className="w-full rounded-2xl border border-[color:var(--border)] bg-white px-4 py-3 outline-none transition focus:border-[color:var(--foreground)]"
@@ -87,7 +86,7 @@ export function NewJobForm({
           <input
             className="w-full rounded-2xl border border-[color:var(--border)] bg-white px-4 py-3 outline-none transition focus:border-[color:var(--foreground)]"
             name="job_name"
-            placeholder="Job Name"
+            placeholder="Job Name (ex: Frontyard grading)"
             required
             type="text"
           />
@@ -100,7 +99,10 @@ export function NewJobForm({
             type="text"
           />
         </FormField>
-        <FormField label="" hint="Job start date">
+        <FormField label="">
+          <label className="w-full rounded-2xl bg-white px-2 py-3 outline-none transition focus:border-[color:var(--foreground)]">
+            Job start date:
+          </label>
           <input
             className="w-full rounded-2xl border border-[color:var(--border)] bg-white px-4 py-3 outline-none transition focus:border-[color:var(--foreground)]"
             defaultValue={getTodayForDateInput()}

@@ -25,17 +25,20 @@ vi.mock("@/lib/server/services/job-service", () => ({
       this.code = code;
     }
   },
-  createJobForBusiness: vi.fn()
+  createJobForBusiness: vi.fn(),
+  updateJobStatusForBusiness: vi.fn()
 }));
 
 import { submitNewJob } from "@/app/(app)/businesses/[businessId]/jobs/actions";
+import { changeJobStatusAction } from "@/app/(app)/businesses/[businessId]/jobs/[jobId]/actions";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
-import { createJobForBusiness } from "@/lib/server/services/job-service";
+import { createJobForBusiness, updateJobStatusForBusiness } from "@/lib/server/services/job-service";
 
 const mockedAuthorizeBusinessAccess = vi.mocked(authorizeBusinessAccess);
 const mockedRequireSession = vi.mocked(requireSession);
 const mockedCreateJobForBusiness = vi.mocked(createJobForBusiness);
+const mockedUpdateJobStatusForBusiness = vi.mocked(updateJobStatusForBusiness);
 
 describe("submitNewJob", () => {
   beforeEach(() => {
@@ -95,5 +98,55 @@ describe("submitNewJob", () => {
       error: "Client name is required."
     });
     expect(redirectMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("changeJobStatusAction", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: true,
+      details: {
+        business: {
+          id: "business-1",
+          name: "ABC Landscaping"
+        },
+        membership: {
+          role: "owner_admin",
+          status: "active"
+        }
+      }
+    } as never);
+    mockedRequireSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
+  });
+
+  it("updates the job status and redirects back to the detail page", async () => {
+    mockedUpdateJobStatusForBusiness.mockResolvedValue({
+      id: "job-1",
+      status: "completed"
+    } as never);
+
+    const formData = new FormData();
+    formData.set("status", "completed");
+
+    await changeJobStatusAction("business-1", "job-1", formData);
+
+    expect(mockedUpdateJobStatusForBusiness).toHaveBeenCalledWith({
+      businessId: "business-1",
+      jobId: "job-1",
+      userId: "user-1",
+      status: "completed"
+    });
+    expect(redirectMock).toHaveBeenCalledWith("/businesses/business-1/jobs/job-1");
+  });
+
+  it("redirects with an error when the submitted status is invalid", async () => {
+    const formData = new FormData();
+    formData.set("status", "pending");
+
+    await changeJobStatusAction("business-1", "job-1", formData);
+
+    expect(mockedUpdateJobStatusForBusiness).not.toHaveBeenCalled();
+    expect(redirectMock).toHaveBeenCalledWith("/businesses/business-1/jobs/job-1?statusError=invalid");
   });
 });

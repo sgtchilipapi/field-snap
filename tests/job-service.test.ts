@@ -31,7 +31,8 @@ vi.mock("@/lib/server/data/jobs", () => ({
   findActiveDuplicateJob: vi.fn(),
   getJobForBusiness: vi.fn(),
   listJobsForBusiness: vi.fn(),
-  updateJob: vi.fn()
+  updateJob: vi.fn(),
+  updateJobStatus: vi.fn()
 }));
 
 vi.mock("@/lib/server/auth/business-authorization", () => ({
@@ -59,12 +60,24 @@ import {
 import { recordAuditEvent } from "@/lib/server/audit/logs";
 import { getDriveConnectionForBusiness } from "@/lib/server/data/drive-connections";
 import { createJobFolder } from "@/lib/server/data/job-folders";
-import { createJob, findActiveDuplicateJob, getJobForBusiness, updateJob } from "@/lib/server/data/jobs";
+import {
+  archiveJob,
+  createJob,
+  findActiveDuplicateJob,
+  getJobForBusiness,
+  updateJob,
+  updateJobStatus
+} from "@/lib/server/data/jobs";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { createGoogleDriveFolderInParent } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
 import { markDriveConnectionIssue } from "@/lib/server/services/drive-connection-health";
-import { JobServiceError, createJobForBusiness, updateJobForBusiness } from "@/lib/server/services/job-service";
+import {
+  JobServiceError,
+  createJobForBusiness,
+  updateJobForBusiness,
+  updateJobStatusForBusiness
+} from "@/lib/server/services/job-service";
 
 const mockedFindCategoryForBusinessByName = vi.mocked(findCategoryForBusinessByName);
 const mockedRecordAuditEvent = vi.mocked(recordAuditEvent);
@@ -73,10 +86,12 @@ const mockedGetCategoryForBusiness = vi.mocked(getCategoryForBusiness);
 const mockedUpsertCategory = vi.mocked(upsertCategory);
 const mockedGetDriveConnectionForBusiness = vi.mocked(getDriveConnectionForBusiness);
 const mockedCreateJobFolder = vi.mocked(createJobFolder);
+const mockedArchiveJob = vi.mocked(archiveJob);
 const mockedCreateJob = vi.mocked(createJob);
 const mockedFindActiveDuplicateJob = vi.mocked(findActiveDuplicateJob);
 const mockedGetJobForBusiness = vi.mocked(getJobForBusiness);
 const mockedUpdateJob = vi.mocked(updateJob);
+const mockedUpdateJobStatus = vi.mocked(updateJobStatus);
 const mockedAuthorizeBusinessAccess = vi.mocked(authorizeBusinessAccess);
 const mockedCreateGoogleDriveFolderInParent = vi.mocked(createGoogleDriveFolderInParent);
 const mockedDecryptSecret = vi.mocked(decryptSecret);
@@ -151,6 +166,22 @@ describe("job-service", () => {
       created_at: new Date(),
       updated_at: new Date()
     });
+    mockedArchiveJob.mockResolvedValue({
+      id: "job-1",
+      business_id: "business-1",
+      category_id: categoryId,
+      client_name: "Smith Residence",
+      job_name: "Backyard Cleanup",
+      address: "123 Main St",
+      job_date: "2026-05-25",
+      drive_folder_id: "drive-folder-1",
+      in_process_folder_id: "in-process-1",
+      needs_review_folder_id: "needs-review-1",
+      status: "archived",
+      created_by_user_id: "user-1",
+      created_at: new Date(),
+      updated_at: new Date()
+    });
     mockedCreateJobFolder.mockResolvedValue({
       id: "job-folder-row-1",
       job_id: "job-1",
@@ -189,6 +220,22 @@ describe("job-service", () => {
       in_process_folder_id: "in-process-1",
       needs_review_folder_id: "needs-review-1",
       status: "active",
+      created_by_user_id: "user-1",
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+    mockedUpdateJobStatus.mockResolvedValue({
+      id: "job-1",
+      business_id: "business-1",
+      category_id: categoryId,
+      client_name: "Smith Residence",
+      job_name: "Backyard Cleanup",
+      address: "123 Main St",
+      job_date: "2026-05-25",
+      drive_folder_id: "drive-folder-1",
+      in_process_folder_id: "in-process-1",
+      needs_review_folder_id: "needs-review-1",
+      status: "completed",
       created_by_user_id: "user-1",
       created_at: new Date(),
       updated_at: new Date()
@@ -330,5 +377,52 @@ describe("job-service", () => {
 
     expect(result.client_name).toBe("Updated Client");
     expect(mockedUpdateJob).toHaveBeenCalled();
+  });
+
+  it("updates a job status for owner-admin users", async () => {
+    const result = await updateJobStatusForBusiness({
+      businessId: "business-1",
+      jobId: "job-1",
+      userId: "user-1",
+      status: "completed"
+    });
+
+    expect(result.status).toBe("completed");
+    expect(mockedUpdateJobStatus).toHaveBeenCalledWith("job-1", "business-1", "completed");
+  });
+
+  it("blocks reactivating an archived job when it would duplicate another active job", async () => {
+    mockedGetJobForBusiness.mockResolvedValueOnce({
+      id: "job-1",
+      business_id: "business-1",
+      category_id: categoryId,
+      client_name: "Smith Residence",
+      job_name: "Backyard Cleanup",
+      address: "123 Main St",
+      job_date: "2026-05-25",
+      drive_folder_id: "drive-folder-1",
+      in_process_folder_id: "in-process-1",
+      needs_review_folder_id: "needs-review-1",
+      status: "archived",
+      created_by_user_id: "user-1",
+      created_at: new Date(),
+      updated_at: new Date(),
+      category_name: "Landscaping",
+      category_slug: "landscaping"
+    });
+    mockedFindActiveDuplicateJob.mockResolvedValueOnce("job-2");
+
+    await expect(
+      updateJobStatusForBusiness({
+        businessId: "business-1",
+        jobId: "job-1",
+        userId: "user-1",
+        status: "active"
+      })
+    ).rejects.toMatchObject({
+      code: "duplicate"
+    } satisfies Partial<JobServiceError>);
+
+    expect(mockedUpdateJobStatus).not.toHaveBeenCalledWith("job-1", "business-1", "active");
   });
 });

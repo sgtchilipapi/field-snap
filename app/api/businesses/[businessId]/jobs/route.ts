@@ -27,8 +27,8 @@ export async function GET(
   const categoryId = url.searchParams.get("category");
   const search = url.searchParams.get("search");
 
-  if (statusParam && !["active", "archived", "all"].includes(statusParam)) {
-    return badRequest("Status must be active, archived, or all.");
+  if (statusParam && !["active", "completed", "archived", "all"].includes(statusParam)) {
+    return badRequest("Status must be active, completed, archived, or all.");
   }
 
   if (
@@ -41,7 +41,7 @@ export async function GET(
   const result = await listJobsForUser({
     businessId,
     userId: session.userId,
-    status: (statusParam as "active" | "archived" | "all" | null) ?? "active",
+    status: (statusParam as "active" | "completed" | "archived" | "all" | null) ?? "active",
     categoryId,
     search
   });

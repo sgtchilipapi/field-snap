@@ -81,7 +81,7 @@ describe("/api/businesses/[businessId]/jobs", () => {
 
     const response = await GET(
       new Request(
-        "http://localhost/api/businesses/business-1/jobs?status=archived&category=11111111-1111-1111-8111-111111111111&search=smith"
+        "http://localhost/api/businesses/business-1/jobs?status=completed&category=11111111-1111-1111-8111-111111111111&search=smith"
       ),
       {
         params: Promise.resolve({ businessId: "business-1" })
@@ -92,7 +92,7 @@ describe("/api/businesses/[businessId]/jobs", () => {
     expect(mockedListJobsForUser).toHaveBeenCalledWith({
       businessId: "business-1",
       userId: "user-1",
-      status: "archived",
+      status: "completed",
       categoryId: "11111111-1111-1111-8111-111111111111",
       search: "smith"
     });
@@ -120,7 +120,7 @@ describe("/api/businesses/[businessId]/jobs", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: "Status must be active, archived, or all."
+      error: "Status must be active, completed, archived, or all."
     });
   });
 
