@@ -2,18 +2,9 @@
 
 import Link from "next/link";
 import { BusinessMenu } from "@/components/business/business-menu";
-import type { BusinessListItem } from "@/lib/server/data/businesses";
-import type { BusinessMembershipRow } from "@/lib/server/db/schema";
 
 export function BusinessTopBar({
-  businesses,
-  currentBusinessId,
-  role
-}: {
-  businesses: BusinessListItem[];
-  currentBusinessId: string;
-  role: BusinessMembershipRow["role"];
-}) {
+}: Record<string, never>) {
   return (
     <div className="flex min-h-[var(--top-bar-height)] items-center justify-between gap-3">
       <Link
@@ -22,11 +13,7 @@ export function BusinessTopBar({
       >
         JobFyl
       </Link>
-      <BusinessMenu
-        businesses={businesses}
-        currentBusinessId={currentBusinessId}
-        role={role}
-      />
+      <BusinessMenu />
     </div>
   );
 }

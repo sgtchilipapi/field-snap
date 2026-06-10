@@ -4,12 +4,10 @@ import { cn } from "@/lib/utils";
 
 export function AppShell({
   topBar,
-  nav,
   children,
   className
 }: {
   topBar?: ReactNode;
-  nav?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -20,10 +18,9 @@ export function AppShell({
           <PageContainer className="py-3">{topBar}</PageContainer>
         </div>
       ) : null}
-      {nav ? <PageContainer className="pt-4 md:pt-5">{nav}</PageContainer> : null}
       <PageContainer
         className={cn(
-          "pb-[var(--bottom-nav-offset)] pt-5 md:pb-10 md:pt-6",
+          "pb-8 pt-5 md:pb-10 md:pt-6",
           className
         )}
       >

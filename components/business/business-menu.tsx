@@ -3,32 +3,16 @@
 import Link from "next/link";
 import { useState } from "react";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { BusinessSwitcher } from "@/components/business/business-switcher";
-import type { BusinessListItem } from "@/lib/server/data/businesses";
-import type { BusinessMembershipRow } from "@/lib/server/db/schema";
 import { cn } from "@/lib/utils";
 
 export function BusinessMenu({
-  businesses = [],
-  currentBusinessId,
-  role,
-  showSettingsLink = true,
   triggerClassName,
   triggerLabel = "Menu"
 }: {
-  businesses?: BusinessListItem[];
-  currentBusinessId?: string;
-  role?: BusinessMembershipRow["role"];
-  showSettingsLink?: boolean;
   triggerClassName?: string;
   triggerLabel?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const canViewSettings =
-    Boolean(currentBusinessId) &&
-    showSettingsLink &&
-    (role === "owner_admin" || role === "reviewer");
-  const canSwitchBusinesses = Boolean(currentBusinessId) && businesses.length > 0;
 
   return (
     <>
@@ -73,36 +57,16 @@ export function BusinessMenu({
               </button>
             </div>
 
-            <div className="mt-6 space-y-6">
-              {canSwitchBusinesses && currentBusinessId ? (
-                <BusinessSwitcher
-                  businesses={businesses}
-                  currentBusinessId={currentBusinessId}
-                  onNavigate={() => setIsOpen(false)}
-                />
-              ) : null}
-
-              <div className="space-y-3">
-                {canViewSettings && currentBusinessId ? (
-                  <Link
-                    className="flex items-center justify-between rounded-[1rem] border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-4 py-3 text-sm font-medium transition hover:border-[color:var(--foreground)]"
-                    href={`/businesses/${currentBusinessId}/settings`}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Settings
-                    <span className="text-[color:var(--muted)]">Open</span>
-                  </Link>
-                ) : null}
-                <Link
-                  className="flex items-center justify-between rounded-[1rem] border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-4 py-3 text-sm font-medium transition hover:border-[color:var(--foreground)]"
-                  href="/businesses"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Businesses
-                  <span className="text-[color:var(--muted)]">View all</span>
-                </Link>
-                <LogoutButton className="w-full justify-between rounded-[1rem] px-4 py-3" />
-              </div>
+            <div className="mt-6 space-y-3">
+              <Link
+                className="flex items-center justify-between rounded-[1rem] border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-4 py-3 text-sm font-medium transition hover:border-[color:var(--foreground)]"
+                href="/businesses"
+                onClick={() => setIsOpen(false)}
+              >
+                Businesses
+                <span className="text-[color:var(--muted)]">View all</span>
+              </Link>
+              <LogoutButton className="w-full justify-between rounded-[1rem] px-4 py-3" />
             </div>
           </aside>
         </div>

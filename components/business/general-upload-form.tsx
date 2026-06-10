@@ -80,7 +80,7 @@ export function GeneralUploadForm({
         />
       </label>
       <p className="text-sm text-[color:var(--muted)]">
-        Use this only for business-level documents like insurance, licenses, payroll, tax, or banking records. One image per upload. Maximum size: 15 MB.
+        Use this only for business-level documents. Max: 15 MB.
       </p>
       {state === "failed" && message ? (
         <InlineAlert description={message} title="Upload failed" variant="danger" />
@@ -93,7 +93,7 @@ export function GeneralUploadForm({
         disabled={state === "uploading"}
         type="submit"
       >
-        {state === "uploading" ? "Uploading..." : "Upload business document"}
+        {state === "uploading" ? "Uploading..." : "Upload"}
       </button>
     </form>
   );

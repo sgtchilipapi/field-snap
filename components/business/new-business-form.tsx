@@ -3,16 +3,30 @@
 import { useActionState } from "react";
 import { submitNewBusiness, type NewBusinessFormState } from "@/app/(app)/businesses/new/actions";
 import { InlineAlert } from "@/components/ui/inline-alert";
+import { cn } from "@/lib/utils";
 
 const initialState: NewBusinessFormState = {
   error: null
 };
 
-export function NewBusinessForm() {
+export function NewBusinessForm({
+  variant = "card"
+}: {
+  variant?: "card" | "sheet";
+}) {
   const [state, formAction, pending] = useActionState(submitNewBusiness, initialState);
+  const isSheetVariant = variant === "sheet";
 
   return (
-    <form action={formAction} className="space-y-5 rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-6">
+    <form
+      action={formAction}
+      className={cn(
+        "space-y-5",
+        isSheetVariant
+          ? ""
+          : "rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-6"
+      )}
+    >
       <div className="space-y-0">
         {/* <label className="text-sm font-medium" htmlFor="business-name">
           Business name
@@ -29,13 +43,21 @@ export function NewBusinessForm() {
       {state.error ? (
         <InlineAlert title="Could not create business" description={state.error} variant="danger" />
       ) : null}
-      <button
-        className="rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={pending}
-        type="submit"
+      <div
+        className={cn(
+          isSheetVariant
+            ? "sticky bottom-0 -mx-4 border-t border-[color:var(--border)] bg-[color:var(--surface-strong)]/96 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur md:-mx-6 md:px-6"
+            : ""
+        )}
       >
-        {pending ? "Setting up..." : "Enter"}
-      </button>
+        <button
+          className="w-full rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+          disabled={pending}
+          type="submit"
+        >
+          {pending ? "Setting up..." : "Create business"}
+        </button>
+      </div>
     </form>
   );
 }

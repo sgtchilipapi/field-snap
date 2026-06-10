@@ -58,7 +58,7 @@ export function JobUploadForm({
 
       form.reset();
       setState("uploaded");
-      setMessage("Uploaded.");
+      setMessage("Queued for processing...");
     } catch (error) {
       setState("failed");
       setMessage(error instanceof Error ? error.message : "Upload failed.");

@@ -1,6 +1,7 @@
 import { JobsWorkspace } from "@/components/business/jobs-workspace";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
@@ -45,7 +46,15 @@ export default async function BusinessJobsPage({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-3">
+      <div>
+        <Link
+          className="inline-flex text-sm italic text-[color:var(--muted)] transition hover:text-[color:var(--foreground)]"
+          href="/businesses"
+        >
+          {"<- Back"}
+        </Link>
+      </div>
       <PageHeader
         eyebrow="Jobs for"
         title={details.business.name}
@@ -54,6 +63,10 @@ export default async function BusinessJobsPage({
       <JobsWorkspace
         businessId={businessId}
         canCreateJob={details.membership.role === "owner_admin"}
+        canViewSettings={
+          details.membership.role === "owner_admin" ||
+          details.membership.role === "reviewer"
+        }
         categories={categories}
         jobs={jobsResult.jobs}
       />

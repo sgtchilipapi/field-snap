@@ -1,3 +1,4 @@
+import { GeneralUploadForm } from "@/components/business/general-upload-form";
 import { InvitationManager } from "@/components/business/invitation-manager";
 import { PageHeader } from "@/components/layout/page-header";
 import { InlineAlert } from "@/components/ui/inline-alert";
@@ -42,6 +43,9 @@ export default async function BusinessSettingsPage({
 
   const driveConnected = driveStatus.connected;
   const isOwner = details.membership.role === "owner_admin";
+  const canUploadGeneral =
+    details.membership.role === "owner_admin" ||
+    details.membership.role === "reviewer";
   const invitations = isOwner
     ? (
       await listInvitationsForBusinessForOwner({
@@ -59,6 +63,14 @@ export default async function BusinessSettingsPage({
     driveStatus.connectionStatus === "error" || driveStatus.connectionStatus === "revoked";
   return (
     <div className="space-y-8">
+      <div>
+        <Link
+          className="inline-flex text-sm italic text-[color:var(--muted)] transition hover:text-[color:var(--foreground)]"
+          href={`/businesses/${businessId}/jobs`}
+        >
+          {"<- Back"}
+        </Link>
+      </div>
       <PageHeader
         eyebrow="Business settings"
         title={details.business.name}
@@ -128,6 +140,14 @@ export default async function BusinessSettingsPage({
             </div>
           ) : null} */}
         </div>
+      ) : null}
+      {canUploadGeneral ? (
+        <section className="space-y-4 rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
+          <div>
+            <h2 className="text-lg font-semibold">Upload business documents</h2>
+          </div>
+          <GeneralUploadForm businessId={businessId} />
+        </section>
       ) : null}
       {/* <dl className="grid gap-4 md:grid-cols-2">
         <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import type { JobWithCategoryRow } from "@/lib/server/data/jobs";
 
 export function JobList({
@@ -160,9 +161,21 @@ export function JobList({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-lg font-semibold">
-                    {job.client_name} - {job.job_name}
+                    {job.client_name}
                   </h2>
-                  <span
+                  
+                </div>
+                <p className="mt-2 text-sm">
+                  {job.job_name}
+                </p>
+                <p className="text-sm text-[color:var(--muted)]">
+                  {job.category_name} · {job.job_date}
+                </p>
+                {job.address ? (
+                  <p className="mt-2 text-sm text-[color:var(--muted)]">{job.address}</p>
+                ) : null}
+              </div>
+              <span
                     className={cn(
                       "inline-flex rounded-full px-3 py-1 text-xs font-medium",
                       job.status === "archived"
@@ -174,15 +187,6 @@ export function JobList({
                   >
                     {job.status}
                   </span>
-                </div>
-                <p className="mt-2 text-sm text-[color:var(--muted)]">
-                  {job.category_name} · {job.job_date}
-                </p>
-                {job.address ? (
-                  <p className="mt-2 text-sm text-[color:var(--muted)]">{job.address}</p>
-                ) : null}
-              </div>
-              <span className="text-sm font-medium text-[color:var(--foreground)]">Open</span>
             </div>
           </Link>
         ))}

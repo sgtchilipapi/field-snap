@@ -26,6 +26,14 @@ export default async function JobSnapPage({
 
   return (
     <div className="space-y-8">
+      <div>
+        <Link
+          className="inline-flex text-sm italic text-[color:var(--muted)] transition hover:text-[color:var(--foreground)]"
+          href={`/businesses/${businessId}/jobs/${jobId}`}
+        >
+          {"<- Back"}
+        </Link>
+      </div>
       <PageHeader
         eyebrow="Snap"
         title="Upload to this job"
@@ -33,19 +41,6 @@ export default async function JobSnapPage({
       />
       <div className="space-y-4">
         <JobUploadForm businessId={businessId} jobId={jobId} />
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
-          <p className="text-sm leading-6 text-[color:var(--muted)]">
-            JobFyl uploads the original image to{" "}
-            <span className="font-medium text-[color:var(--foreground)]">00 In-Process</span>{" "}
-            first. Background classification and Drive filing happen after the upload succeeds.
-          </p>
-        </div>
-        <Link
-          className="inline-flex w-full items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-4 py-3 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)] sm:w-auto"
-          href={`/businesses/${businessId}/jobs/${jobId}`}
-        >
-          Back to job
-        </Link>
       </div>
     </div>
   );

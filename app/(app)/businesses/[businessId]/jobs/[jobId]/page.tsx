@@ -33,6 +33,14 @@ export default async function JobDetailsPage({
 
   return (
     <div className="space-y-8">
+      <div>
+        <Link
+          className="inline-flex text-sm italic text-[color:var(--muted)] transition hover:text-[color:var(--foreground)]"
+          href={`/businesses/${businessId}/jobs`}
+        >
+          {"<- Back"}
+        </Link>
+      </div>
       <PageHeader
         eyebrow="Job detail"
         title={`${job.client_name} - ${job.job_name}`}
@@ -53,7 +61,7 @@ export default async function JobDetailsPage({
           rel="noreferrer"
           target="_blank"
         >
-          Open in Drive
+          See Docs
         </Link>
       </div>
       <dl className="grid gap-4 md:grid-cols-2">
