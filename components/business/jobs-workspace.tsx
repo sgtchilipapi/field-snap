@@ -60,7 +60,7 @@ export function JobsWorkspace({
       {isCreateOpen ? (
         <MobileSheet
           closeLabel="Close new job sheet"
-          description="Create the job and Field-Snap will build the Drive folder structure automatically."
+          description="Create the job and Fylerr will build the Drive folder structure automatically."
           onClose={() => setIsCreateOpen(false)}
           title="Create a job"
         >

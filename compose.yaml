@@ -1,9 +1,9 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: field-snap-postgres
+    container_name: fylerr-postgres
     environment:
-      POSTGRES_DB: field_snap
+      POSTGRES_DB: fylerr
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d field_snap"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fylerr"]
       interval: 5s
       timeout: 5s
       retries: 10

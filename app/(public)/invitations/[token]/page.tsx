@@ -40,7 +40,7 @@ export default async function InvitationPage({
     error === "unexpected"
       ? {
           title: "Invitation acceptance failed",
-          description: "Field-Snap could not complete this invitation action. Try again.",
+          description: "Fylerr could not complete this invitation action. Try again.",
           variant: "danger" as const
         }
       : preview.state === "invalid"
@@ -88,7 +88,7 @@ export default async function InvitationPage({
   return (
     <>
       <section className="flex flex-col justify-center">
-        <p className="text-sm uppercase tracking-[0.32em] text-[color:var(--muted)]">Field-Snap</p>
+        <p className="text-sm uppercase tracking-[0.32em] text-[color:var(--muted)]">Fylerr</p>
         <h1 className="mt-4 max-w-xl text-5xl font-semibold tracking-tight">
           Join a business workspace.
         </h1>

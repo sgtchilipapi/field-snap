@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseDatabaseEnv, parseServerEnv } from "@/lib/server/env";
 
 const validEnv = {
-  DATABASE_URL: "postgres://postgres:postgres@localhost:5432/field_snap",
+  DATABASE_URL: "postgres://postgres:postgres@localhost:5432/fylerr",
   APP_BASE_URL: "http://localhost:3000",
   SESSION_SECRET: "12345678901234567890123456789012",
   GOOGLE_CLIENT_ID: "client-id",
@@ -10,7 +10,7 @@ const validEnv = {
   DRIVE_TOKEN_ENCRYPTION_KEY: "abcdefghijklmnopqrstuvwxyz123456",
   GEMINI_API_KEY: "gemini-key",
   QUEUE_REDIS_URL: "redis://localhost:6379",
-  QUEUE_PREFIX: "field-snap"
+  QUEUE_PREFIX: "fylerr"
 };
 
 describe("parseServerEnv", () => {

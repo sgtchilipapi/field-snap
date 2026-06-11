@@ -63,14 +63,14 @@ export function InvitationManager({
       const payload = (await response.json()) as { error?: string; invite_url?: string };
 
       if (!response.ok) {
-        setError(payload.error ?? "Field-Snap could not create the invitation.");
+        setError(payload.error ?? "Fylerr could not create the invitation.");
         return;
       }
 
       setInviteUrl(payload.invite_url ?? null);
       router.refresh();
     } catch {
-      setError("Field-Snap could not create the invitation.");
+      setError("Fylerr could not create the invitation.");
     } finally {
       setIsSubmitting(false);
     }
@@ -143,7 +143,7 @@ export function InvitationManager({
         <div className="space-y-3 rounded-[1.25rem] border border-[color:var(--border)] bg-white p-4">
           <InlineAlert
             title="Invite ready"
-            description="Copy this link now. Field-Snap stores only the token hash, so the raw URL is shown when the invite is created."
+            description="Copy this link now. Fylerr stores only the token hash, so the raw URL is shown when the invite is created."
             variant="success"
           />
           <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-4 text-sm break-all">

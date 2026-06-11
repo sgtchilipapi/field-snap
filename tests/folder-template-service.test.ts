@@ -91,7 +91,7 @@ describe("folder-template-service", () => {
     mockedDecryptSecret.mockReturnValue("access-token");
     mockedGetGoogleDriveFolder.mockImplementation(async (_accessToken, folderId) => {
       if (folderId === "root-1") {
-        return { id: "root-1", name: "Field-Snap - ABC Landscaping" };
+        return { id: "root-1", name: "Fylerr - ABC Landscaping" };
       }
 
       return null;

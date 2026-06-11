@@ -71,7 +71,7 @@ echo "Starting Postgres..."
 docker compose up -d postgres
 
 echo "Waiting for Postgres to become ready..."
-until docker compose exec -T postgres pg_isready -U postgres -d field_snap >/dev/null 2>&1; do
+until docker compose exec -T postgres pg_isready -U postgres -d fylerr >/dev/null 2>&1; do
   sleep 1
 done
 
@@ -82,7 +82,7 @@ echo "Starting document worker..."
 npm run worker:documents &
 DOCUMENT_WORKER_PID=$!
 
-echo "Starting Field-Snap..."
+echo "Starting Fylerr..."
 npm run dev &
 DEV_SERVER_PID=$!
 

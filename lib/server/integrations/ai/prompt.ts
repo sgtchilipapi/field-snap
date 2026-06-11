@@ -20,7 +20,7 @@ export function buildDocumentClassificationPrompt(
   };
 
   return [
-    "Classify this single field-service business document image for Field-Snap.",
+    "Classify this single field-service business document image for Fylerr.",
     "Return strict JSON only. Do not wrap the JSON in markdown fences.",
     "Use only the allowed target folders provided in the context.",
     "Do not assign accounting categories, payment status, or any bookkeeping treatment beyond the requested fields.",

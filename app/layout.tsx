@@ -3,17 +3,17 @@ import "@/app/globals.css";
 import "@/lib/server/env";
 
 export const metadata: Metadata = {
-  applicationName: "Field-Snap",
+  applicationName: "Fylerr",
   title: {
-    default: "Field-Snap",
-    template: "%s | Field-Snap"
+    default: "Fylerr",
+    template: "%s | Fylerr"
   },
-  description: "Field-Snap keeps job and admin documents organized from the field to review.",
+  description: "Fylerr keeps job and admin documents organized from the field to review.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Field-Snap"
+    title: "Fylerr"
   },
   icons: {
     icon: [

@@ -35,7 +35,7 @@ const DOCUMENT_CLASSIFICATION_RESPONSE_SCHEMA = {
         "legal_document",
         "other",
       ],
-      description: "The best Field-Snap document type for this image.",
+      description: "The best Fylerr document type for this image.",
     },
     target_folder_key: {
       type: "string",

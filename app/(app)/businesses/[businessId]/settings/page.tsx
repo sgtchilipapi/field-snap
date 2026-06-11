@@ -74,19 +74,19 @@ export default async function BusinessSettingsPage({
       <PageHeader
         eyebrow="Business settings"
         title={details.business.name}
-      // description="Connect the owner's Google Drive for this business and confirm the root folder Field-Snap will manage."
+      // description="Connect the owner's Google Drive for this business and confirm the root folder Fylerr will manage."
       />
       {/* <InlineAlert title={driveAlert.title} description={driveAlert.description} variant={driveAlert.variant} /> */}
       {foldersError ? (
         <InlineAlert
           title="Folder repair failed"
-          description="Field-Snap could not recreate the required default Drive folders for this business."
+          description="Fylerr could not recreate the required default Drive folders for this business."
           variant="danger"
         />
       ) : folders === "repaired" ? (
         <InlineAlert
           title="Folders repaired"
-          description="Field-Snap verified the default category and general document folders for this business."
+          description="Fylerr verified the default category and general document folders for this business."
           variant="success"
         />
       ) : null}

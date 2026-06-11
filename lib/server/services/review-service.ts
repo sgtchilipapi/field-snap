@@ -383,7 +383,7 @@ export async function patchDocumentForReview(input: {
       });
     } catch (error) {
       await updateDriveConnectionStatusIfNeeded(input.businessId, error);
-      throw new ReviewServiceError("Field-Snap could not move the document in Google Drive.", "drive_unavailable");
+      throw new ReviewServiceError("Fylerr could not move the document in Google Drive.", "drive_unavailable");
     }
   }
 

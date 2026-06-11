@@ -44,7 +44,7 @@ export function BusinessMenu({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-[color:var(--muted)]">
-                  Field-Snap
+                  Fylerr
                 </p>
                 <h2 className="mt-2 text-lg font-semibold">Business menu</h2>
               </div>

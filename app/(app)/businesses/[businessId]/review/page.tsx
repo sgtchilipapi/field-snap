@@ -47,7 +47,7 @@ export default async function ReviewPage({
       />
       <InlineAlert
         title="Review scope"
-        description="Field-Snap keeps this view focused on document routing and metadata checks. Bulk actions, rerun AI, and accounting workflows stay out of the MVP."
+        description="Fylerr keeps this view focused on document routing and metadata checks. Bulk actions, rerun AI, and accounting workflows stay out of the MVP."
       />
       <ReviewDocumentList businessId={businessId} currentView={view} documents={result.documents} />
     </div>

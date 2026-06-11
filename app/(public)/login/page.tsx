@@ -7,17 +7,17 @@ import { getPostLoginRedirectForUser } from "@/lib/server/services/auth-service"
 const alertByError = {
   access_denied: {
     title: "Access denied",
-    description: "Google sign-in was cancelled or JobFyl did not receive approved access.",
+    description: "Google sign-in was cancelled or Fylerr did not receive approved access.",
     variant: "danger" as const
   },
   email_not_verified: {
     title: "Access denied",
-    description: "JobFyl requires a verified Google email address before sign-in can continue.",
+    description: "Fylerr requires a verified Google email address before sign-in can continue.",
     variant: "danger" as const
   },
   callback_failed: {
     title: "Callback failed",
-    description: "JobFyl could not complete the Google callback. Check OAuth configuration and try again.",
+    description: "Fylerr could not complete the Google callback. Check OAuth configuration and try again.",
     variant: "danger" as const
   },
   unexpected: {
@@ -52,7 +52,7 @@ export default async function LoginPage({
     <>
       <section className="flex flex-col justify-center">
         <p className="text-sm uppercase tracking-[0.32em] text-[color:var(--muted)]">
-          JobFyl
+          Fylerr
         </p>
         <h1 className="mt-4 max-w-xl text-5xl font-semibold tracking-tight">
           Never lose a document again.
@@ -67,7 +67,7 @@ export default async function LoginPage({
           Authentication
         </p>
         <p className="mt-4 text-[color:var(--muted)]">
-          JobFyl uses Google identity for access.
+          Fylerr uses Google identity for access.
         </p>
         <div className="mt-8 space-y-4">
           <GoogleLoginButton href={loginHref} />
@@ -82,7 +82,7 @@ export default async function LoginPage({
             <InlineAlert
               title="Signed out"
               variant="success"
-              description="Your JobFyl session has been cleared."
+              description="Your Fylerr session has been cleared."
             />
           ) : null}
         </div>

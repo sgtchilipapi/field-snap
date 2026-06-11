@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Field-Snap",
-    short_name: "Field-Snap",
+    name: "Fylerr",
+    short_name: "Fylerr",
     description: "Capture and route construction documents into the right Google Drive folders.",
     start_url: "/",
     display: "standalone",
