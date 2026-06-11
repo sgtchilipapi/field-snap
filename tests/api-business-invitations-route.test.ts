@@ -58,7 +58,7 @@ describe("/api/businesses/[businessId]/invitations", () => {
         expires_at: new Date("2026-06-02T00:00:00.000Z"),
         created_at: new Date("2026-05-26T00:00:00.000Z")
       },
-      inviteUrl: "https://field-snap.example/invitations/token-123"
+      inviteUrl: "https://fylerr.example/invitations/token-123"
     } as never);
 
     const response = await POST(
@@ -87,7 +87,7 @@ describe("/api/businesses/[businessId]/invitations", () => {
         expires_at: new Date("2026-06-02T00:00:00.000Z").toJSON(),
         created_at: new Date("2026-05-26T00:00:00.000Z").toJSON()
       },
-      invite_url: "https://field-snap.example/invitations/token-123"
+      invite_url: "https://fylerr.example/invitations/token-123"
     });
   });
 

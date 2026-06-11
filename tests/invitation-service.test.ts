@@ -97,7 +97,7 @@ describe("invitation-service", () => {
         invited_email: "crew@example.com",
         role: "field_user"
       },
-      baseUrl: "https://field-snap.example"
+      baseUrl: "https://fylerr.example"
     });
 
     expect(mockedRevokePendingInvitationsForEmail).toHaveBeenCalledWith(
@@ -112,7 +112,7 @@ describe("invitation-service", () => {
         invitedByUserId: "owner-1"
       })
     );
-    expect(result.inviteUrl).toMatch(/^https:\/\/field-snap\.example\/invitations\//);
+    expect(result.inviteUrl).toMatch(/^https:\/\/fylerr\.example\/invitations\//);
     expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         businessId: "business-1",
@@ -138,7 +138,7 @@ describe("invitation-service", () => {
           invited_email: "crew@example.com",
           role: "field_user"
         },
-        baseUrl: "https://field-snap.example"
+        baseUrl: "https://fylerr.example"
       })
     ).rejects.toMatchObject({
       code: "forbidden"
@@ -154,7 +154,7 @@ describe("invitation-service", () => {
           invited_email: "invalid-email",
           role: "owner_admin"
         },
-        baseUrl: "https://field-snap.example"
+        baseUrl: "https://fylerr.example"
       })
     ).rejects.toBeInstanceOf(ZodError);
   });

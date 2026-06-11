@@ -10,7 +10,7 @@ export async function getHealthSnapshot() {
 
   return {
     ok: database.ok,
-    service: "Field-Snap",
+    service: "Fylerr",
     database: database.ok ? "ok" : "error",
     timestamp: new Date().toISOString(),
     ...(database.ok ? {} : { error: database.error })

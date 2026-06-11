@@ -26,7 +26,7 @@ export async function submitNewBusiness(
     }
 
     return {
-      error: "Field-Snap could not create the business."
+      error: "Fylerr could not create the business."
     };
   }
 

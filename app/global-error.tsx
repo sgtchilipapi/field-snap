@@ -13,7 +13,7 @@ export default function GlobalError({
     <html lang="en">
       <body className="flex min-h-screen items-center justify-center px-6 py-12">
         <ErrorPanel
-          title="Field-Snap hit a startup problem"
+          title="Fylerr hit a startup problem"
           description={error.message || "The application could not finish rendering."}
           actionLabel="Try again"
           onAction={reset}

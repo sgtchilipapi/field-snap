@@ -13,7 +13,7 @@ export default function AppError({
     <div className="flex min-h-[60vh] items-center justify-center">
       <ErrorPanel
         title="This workspace could not load"
-        description={error.message || "Field-Snap could not render the protected view."}
+        description={error.message || "Fylerr could not render the protected view."}
         actionLabel="Retry"
         onAction={reset}
       />

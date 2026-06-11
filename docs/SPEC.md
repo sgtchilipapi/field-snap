@@ -1,10 +1,10 @@
-# Field-Snap — MVP Full Spec
+# Fylerr — MVP Full Spec
 
 ## 0. Product Definition
 
 ### Product name placeholder
 
-**Field-Snap**
+**Fylerr**
 
 ### One-line description
 
@@ -176,7 +176,7 @@ Smith Residence - Backyard Cleanup - 2026-05-21
 App creates:
 
 ```text
-/Field-Snap - ABC Landscaping/
+/Fylerr - ABC Landscaping/
   /Landscaping/
     /Smith Residence - Backyard Cleanup - 2026-05-21/
       /00 In-Process/
@@ -257,7 +257,7 @@ Flow:
 Folder structure:
 
 ```text
-/Field-Snap - ABC Landscaping/
+/Fylerr - ABC Landscaping/
   /General Business Docs/
     /00 In-Process/
     /01 Insurance/
@@ -424,7 +424,7 @@ cleaner offboarding
 The app creates and manages folders inside the owner’s Drive:
 
 ```text
-/Field-Snap - [Business Name]/
+/Fylerr - [Business Name]/
 ```
 
 ## Storage principle
@@ -461,13 +461,13 @@ database blobs
 ## 7.1 Root folder
 
 ```text
-Field-Snap - [Business Name]
+Fylerr - [Business Name]
 ```
 
 Example:
 
 ```text
-Field-Snap - ABC Landscaping
+Fylerr - ABC Landscaping
 ```
 
 ## 7.2 Category folders

@@ -11,7 +11,7 @@ export function BusinessTopBar({
         className="text-lg font-semibold tracking-tight text-[color:var(--foreground)] transition hover:text-[color:var(--muted)] md:text-2xl"
         href="/"
       >
-        JobFyl
+        Fylerr
       </Link>
       <BusinessMenu />
     </div>

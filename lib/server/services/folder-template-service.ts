@@ -82,7 +82,7 @@ export async function ensureBusinessFolderTemplate(businessId: string) {
   try {
     const rootFolder = await ensureFolder({
       accessToken,
-      folderName: `Field-Snap - ${business.name}`,
+      folderName: `Fylerr - ${business.name}`,
       existingFolderId: business.drive_root_folder_id
     });
 

@@ -25,7 +25,7 @@ export default function Icon() {
           letterSpacing: -12
         }}
       >
-        FS
+        Fy
       </div>
     ),
     size

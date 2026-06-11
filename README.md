@@ -1,4 +1,4 @@
-# Field-Snap
+# Fylerr
 
 The original `README.md` content has been split into focused docs under [`docs/`](docs/):
 
@@ -31,5 +31,5 @@ npm run db:migrate
 The default development connection string in [`.env.example`](.env.example) points at this container:
 
 ```text
-postgres://postgres:postgres@localhost:5432/field_snap
+postgres://postgres:postgres@localhost:5432/fylerr
 ```

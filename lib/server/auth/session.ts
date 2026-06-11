@@ -3,10 +3,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "@/lib/server/env";
 
-export const SESSION_COOKIE_NAME = "field-snap-session";
-export const AUTH_STATE_COOKIE_NAME = "field-snap-auth-state";
-export const AUTH_RETURN_TO_COOKIE_NAME = "field-snap-auth-return-to";
-export const DRIVE_AUTH_STATE_COOKIE_NAME = "field-snap-drive-auth-state";
+export const SESSION_COOKIE_NAME = "fylerr-session";
+export const AUTH_STATE_COOKIE_NAME = "fylerr-auth-state";
+export const AUTH_RETURN_TO_COOKIE_NAME = "fylerr-auth-return-to";
+export const DRIVE_AUTH_STATE_COOKIE_NAME = "fylerr-drive-auth-state";
 
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 

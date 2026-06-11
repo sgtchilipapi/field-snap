@@ -9,7 +9,7 @@ export default function ForbiddenPage() {
         </p>
         <div className="space-y-3">
           <h1 className="text-4xl font-semibold tracking-tight text-[color:var(--foreground)]">
-            You do not have permission to open this Field-Snap view.
+            You do not have permission to open this Fylerr view.
           </h1>
           <p className="max-w-xl text-base leading-7 text-[color:var(--muted)]">
             Your current business membership does not allow this page or action. Use a permitted

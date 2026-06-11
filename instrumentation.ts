@@ -2,11 +2,11 @@ import { logError } from "@/lib/server/logger";
 
 declare global {
   // eslint-disable-next-line no-var
-  var __fieldSnapInstrumentationRegistered: boolean | undefined;
+  var __fylerrInstrumentationRegistered: boolean | undefined;
 }
 
 export async function register() {
-  if (globalThis.__fieldSnapInstrumentationRegistered) {
+  if (globalThis.__fylerrInstrumentationRegistered) {
     return;
   }
 
@@ -18,6 +18,6 @@ export async function register() {
     logError("Uncaught exception", error);
   });
 
-  globalThis.__fieldSnapInstrumentationRegistered = true;
+  globalThis.__fylerrInstrumentationRegistered = true;
 }
 

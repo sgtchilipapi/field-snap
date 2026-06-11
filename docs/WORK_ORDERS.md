@@ -25,7 +25,7 @@ These decisions resolve current ambiguities in the higher-level docs.
 6. Only `owner_admin` and `reviewer` can upload general business documents in the MVP.
 7. Invitation delivery in the MVP is a copyable invite link. Email sending is optional and not required.
 8. Use a durable background queue for document AI processing. Do not rely on in-memory fire-and-forget tasks tied to the web request.
-9. Use `Field-Snap` as the user-facing product name everywhere.
+9. Use `Fylerr` as the user-facing product name everywhere.
 
 ## Shared constants
 
@@ -181,7 +181,7 @@ Acceptance
 2. Unauthenticated access to protected pages redirects to `/login`.
 3. `/api/health` returns success and confirms the database is reachable.
 4. The project already has a place for server services, integrations, and queue code so later work does not pile logic into route handlers.
-5. User-facing product copy uses `Field-Snap`.
+5. User-facing product copy uses `Fylerr`.
 
 ## WO-02 — Google login
 
@@ -271,7 +271,7 @@ Implement
 2. Implement `POST /businesses/:businessId/drive/connect` to start Google Drive OAuth with business-scoped state and CSRF protection.
 3. Request the minimum useful Drive scope first. If `drive.file` proves insufficient for owner-authorized root folder creation and later file movement, broaden to `drive`.
 4. Implement `GET /auth/google/drive/callback` to exchange the OAuth code, use business-scoped state plus CSRF validation, encrypt token material, and persist a single active `drive_connections` record for the business.
-5. Create the business root folder exactly as `Field-Snap - [Business Name]` if `businesses.drive_root_folder_id` is empty.
+5. Create the business root folder exactly as `Fylerr - [Business Name]` if `businesses.drive_root_folder_id` is empty.
 6. If the business already has a root folder id, verify the app can still access it and reuse it instead of creating a duplicate tree.
 7. Update the business record with the root folder id once it is confirmed valid.
 8. Implement `GET /businesses/:businessId/drive/status` returning `connected`, `google_account_email`, and `root_folder_id`.
@@ -282,7 +282,7 @@ Implement
 Acceptance
 
 1. An owner can connect a Google Drive account for a business.
-2. The app creates or reuses exactly one root folder named `Field-Snap - [Business Name]`.
+2. The app creates or reuses exactly one root folder named `Fylerr - [Business Name]`.
 3. The resulting root folder id is stored on the business record.
 4. A non-owner cannot start or complete a Drive connection for the business.
 5. The settings page clearly shows whether Drive is connected and which Google account is attached.

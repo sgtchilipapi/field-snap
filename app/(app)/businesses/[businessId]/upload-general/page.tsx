@@ -32,7 +32,7 @@ export default async function GeneralUploadPage({
             <span className="font-medium text-[color:var(--foreground)]">
               General Business Docs / 00 In-Process
             </span>{" "}
-            first, then Field-Snap routes them into the matching business folder or Needs Review.
+            first, then Fylerr routes them into the matching business folder or Needs Review.
           </p>
         </div>
         <Link

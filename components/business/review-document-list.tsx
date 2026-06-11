@@ -82,7 +82,7 @@ export function ReviewDocumentList({
       {documents.length === 0 ? (
         <EmptyState
           title="No documents in this view"
-          description="Uploads that need attention, recently arrived documents, and failed processing runs will show up here as Field-Snap routes them."
+          description="Uploads that need attention, recently arrived documents, and failed processing runs will show up here as Fylerr routes them."
         />
       ) : (
         <div className="grid gap-4">

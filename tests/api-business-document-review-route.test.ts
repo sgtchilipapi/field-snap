@@ -99,7 +99,7 @@ describe("/api/businesses/[businessId]/documents/[documentId]/review", () => {
   it("returns Drive integration failures as 503", async () => {
     mockedGetSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
     mockedPatchDocumentForReview.mockRejectedValue(
-      new ReviewServiceError("Field-Snap could not move the document in Google Drive.", "drive_unavailable")
+      new ReviewServiceError("Fylerr could not move the document in Google Drive.", "drive_unavailable")
     );
 
     const response = await PATCH(

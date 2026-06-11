@@ -62,7 +62,7 @@ export async function submitNewJob(
     }
 
     return {
-      error: "Field-Snap could not create the job."
+      error: "Fylerr could not create the job."
     };
   }
 

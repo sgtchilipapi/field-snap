@@ -1,8 +1,8 @@
-# Field-Snap UI Plan
+# Fylerr UI Plan
 
 ## Purpose
 
-This document captures the current UI plan for Field-Snap.
+This document captures the current UI plan for Fylerr.
 
 It is a mobile-first rewrite plan for the MVP interface. The existing UI may be used as a reference for route coverage, permissions, and current component structure, but the interface should be recomposed rather than lightly adjusted.
 
@@ -10,7 +10,7 @@ It is a mobile-first rewrite plan for the MVP interface. The existing UI may be 
 
 ### Primary rule
 
-Field-Snap is mobile-first across the entire app.
+Fylerr is mobile-first across the entire app.
 
 ### What that means
 
@@ -132,7 +132,7 @@ Public sign-in entry point for unauthenticated users.
 
 Elements and components:
 
-- Product label: `Field-Snap`
+- Product label: `Fylerr`
 - One short headline
 - One short supporting sentence
 - Primary CTA: `Sign in with Google`

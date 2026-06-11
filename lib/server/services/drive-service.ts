@@ -75,7 +75,7 @@ async function ensureBusinessRootFolder(input: {
 
   const folder = await createGoogleDriveFolder(
     input.accessToken,
-    `Field-Snap - ${input.businessName}`
+    `Fylerr - ${input.businessName}`
   );
 
   await updateBusinessDriveRootFolder(input.businessId, folder.id);

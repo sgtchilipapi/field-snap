@@ -135,7 +135,7 @@ describe("drive-service", () => {
     mockedFetchGoogleDriveAccountEmail.mockResolvedValue("owner@example.com");
     mockedCreateGoogleDriveFolder.mockResolvedValue({
       id: "folder-123",
-      name: "Field-Snap - ABC Landscaping"
+      name: "Fylerr - ABC Landscaping"
     });
     mockedGetGoogleDriveFolder.mockResolvedValue(null);
 
