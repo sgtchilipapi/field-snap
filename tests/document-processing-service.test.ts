@@ -213,13 +213,29 @@ describe("document-processing-service", () => {
       {
         id: "folder-3",
         job_id: "job-1",
+        folder_key: "vendor_bills",
+        folder_name: "02 Vendor Bills",
+        drive_folder_id: "vendor-bills-1",
+        created_at: new Date()
+      },
+      {
+        id: "folder-4",
+        job_id: "job-1",
+        folder_key: "customer_invoices",
+        folder_name: "03 Customer Invoices",
+        drive_folder_id: "customer-invoices-1",
+        created_at: new Date()
+      },
+      {
+        id: "folder-5",
+        job_id: "job-1",
         folder_key: "job_photos",
         folder_name: "04 Job Photos",
         drive_folder_id: "job-photos-1",
         created_at: new Date()
       },
       {
-        id: "folder-4",
+        id: "folder-6",
         job_id: "job-1",
         folder_key: "needs_review",
         folder_name: "99 Needs Review",
@@ -378,6 +394,60 @@ describe("document-processing-service", () => {
         status: "auto_filed",
         currentDriveFolderId: "receipts-1",
         failureReason: null
+      })
+    );
+  });
+
+  it("corrects an issued invoice misclassified as a vendor bill when the issuer matches the business name", async () => {
+    const provider = createProvider(
+      Promise.resolve({
+        document_type: "vendor_bill",
+        target_folder_key: "vendor_bills",
+        suggested_filename: "ABC Landscaping - INV-1001 - 2026-05-21.jpg",
+        vendor_or_party: "ABC Landscaping LLC",
+        document_date: "2026-05-21",
+        amount: 950,
+        currency: "USD",
+        invoice_number: "INV-1001",
+        due_date: "2026-06-20",
+        confidence: 0.97,
+        needs_review: false,
+        reason: "Invoice issued by ABC Landscaping.",
+        raw_provider_payload: { ok: true },
+        valid: true,
+        normalization_error_code: null,
+        normalization_error_details: null
+      })
+    );
+
+    const result = await runNextDocumentProcessingJob(provider as never);
+
+    expect(result).toEqual({
+      jobId: "processing-job-1",
+      documentId: "document-1",
+      status: "auto_filed"
+    });
+    expect(mockedMoveGoogleDriveFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toFolderId: "customer-invoices-1"
+      })
+    );
+    expect(mockedUpdateDocumentAiFields).toHaveBeenCalledWith(
+      expect.objectContaining({
+        documentType: "customer_invoice",
+        targetFolderKey: "customer_invoices",
+        vendorOrParty: "ABC Landscaping LLC",
+        aiReason: expect.stringContaining("matches the business name")
+      })
+    );
+    expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "document.ai_classified",
+        newValue: expect.objectContaining({
+          document_type: "customer_invoice",
+          target_folder_key: "customer_invoices",
+          routing_reason: "auto_filed"
+        })
       })
     );
   });

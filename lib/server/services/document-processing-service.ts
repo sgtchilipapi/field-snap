@@ -106,6 +106,68 @@ function getFileExtension(filename: string | null) {
   return filename.slice(lastDot);
 }
 
+function normalizeComparableName(value: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  return value
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(
+      /\b(inc|incorporated|llc|l\s*l\s*c|ltd|limited|co|company|corp|corporation|the)\b/g,
+      " ",
+    )
+    .replace(MULTISPACE_PATTERN, " ")
+    .trim();
+}
+
+function namesLikelyReferToSameParty(left: string | null, right: string | null) {
+  const normalizedLeft = normalizeComparableName(left);
+  const normalizedRight = normalizeComparableName(right);
+
+  if (!normalizedLeft || !normalizedRight) {
+    return false;
+  }
+
+  return (
+    normalizedLeft === normalizedRight ||
+    normalizedLeft.includes(normalizedRight) ||
+    normalizedRight.includes(normalizedLeft)
+  );
+}
+
+function applyBusinessNameInvoiceSafeguard(input: {
+  classification: AIClassificationResult;
+  businessName: string;
+  allowedFolders: Array<AllowedTargetFolder & { driveFolderId: string }>;
+}) {
+  const { classification } = input;
+
+  if (
+    !classification.valid ||
+    classification.target_folder_key !== "vendor_bills" ||
+    !namesLikelyReferToSameParty(classification.vendor_or_party, input.businessName)
+  ) {
+    return classification;
+  }
+
+  const hasCustomerInvoiceFolder = input.allowedFolders.some(
+    (folder) => folder.key === "customer_invoices",
+  );
+
+  return {
+    ...classification,
+    document_type: hasCustomerInvoiceFolder ? "customer_invoice" : classification.document_type,
+    target_folder_key: hasCustomerInvoiceFolder ? "customer_invoices" : "needs_review",
+    needs_review: hasCustomerInvoiceFolder ? classification.needs_review : true,
+    reason: hasCustomerInvoiceFolder
+      ? `${classification.reason} Backend corrected the invoice route because the extracted invoice issuer/payee matches the business name.`
+      : `${classification.reason} Backend routed this to review because the extracted invoice issuer/payee matches the business name, but Customer Invoices is not an allowed folder.`
+  } satisfies AIClassificationResult;
+}
+
 function shouldRetryAttempt(attempts: number) {
   return attempts < 2;
 }
@@ -323,7 +385,7 @@ async function handleAiClassificationOutcome(input: {
   allowedFolders: Array<AllowedTargetFolder & { driveFolderId: string }>;
 }) {
   const fileBytes = await getGoogleDriveFileBytes(input.accessToken, input.document.original_drive_file_id);
-  const classification = await input.provider.classifyDocument({
+  const providerClassification = await input.provider.classifyDocument({
     imageBytes: fileBytes.bytes,
     mimeType: input.document.mime_type ?? "application/octet-stream",
     businessName: input.businessName,
@@ -339,6 +401,12 @@ async function handleAiClassificationOutcome(input: {
       key: folder.key,
       name: folder.name
     }))
+  });
+
+  const classification = applyBusinessNameInvoiceSafeguard({
+    classification: providerClassification,
+    businessName: input.businessName,
+    allowedFolders: input.allowedFolders
   });
 
   await updateDocumentAiFields({
