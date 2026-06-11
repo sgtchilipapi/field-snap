@@ -134,7 +134,39 @@ type GeminiGenerateContentResponse = {
       }>;
     };
   }>;
+  error?: {
+    code?: number;
+    message?: string;
+    status?: string;
+  };
 };
+
+class GeminiClassificationApiError extends Error {
+  public readonly status: number;
+  public readonly statusText: string;
+  public readonly providerErrorStatus: string | null;
+  public readonly providerErrorMessage: string | null;
+
+  constructor(input: {
+    status: number;
+    statusText: string;
+    providerErrorStatus?: string | null;
+    providerErrorMessage?: string | null;
+  }) {
+    const providerMessage = input.providerErrorMessage
+      ? `: ${input.providerErrorMessage}`
+      : "";
+
+    super(
+      `Gemini classification failed: ${input.status} ${input.statusText}${providerMessage}`,
+    );
+    this.name = "GeminiClassificationApiError";
+    this.status = input.status;
+    this.statusText = input.statusText;
+    this.providerErrorStatus = input.providerErrorStatus ?? null;
+    this.providerErrorMessage = input.providerErrorMessage ?? null;
+  }
+}
 
 function toBase64(bytes: Uint8Array) {
   return Buffer.from(bytes).toString("base64");
@@ -191,9 +223,12 @@ async function callGeminiClassificationApi(
   const payload = await parseGeminiJsonResponse(response);
 
   if (!response.ok) {
-    throw new Error(
-      `Gemini classification failed: ${response.status} ${response.statusText}`,
-    );
+    throw new GeminiClassificationApiError({
+      status: response.status,
+      statusText: response.statusText,
+      providerErrorStatus: payload.error?.status,
+      providerErrorMessage: payload.error?.message,
+    });
   }
 
   return payload;

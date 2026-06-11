@@ -28,7 +28,7 @@ import {
   moveGoogleDriveFile,
   renameGoogleDriveFile
 } from "@/lib/server/integrations/google/drive";
-import { logError, logInfo, logWarn } from "@/lib/server/logger";
+import { logError, logInfo, logWarn, logWarnWithError } from "@/lib/server/logger";
 import { decryptSecret } from "@/lib/server/security/encryption";
 import { getBusinessById } from "@/lib/server/data/businesses";
 import { markDriveConnectionIssue } from "@/lib/server/services/drive-connection-health";
@@ -520,10 +520,14 @@ export async function processDocumentProcessingJob(
         toFolderId: destinationFolderId
       });
     } catch (error) {
-      logWarn("Drive move failed", {
+      logWarnWithError("Drive move failed", error, {
         businessId: context.business.id,
         documentId: context.document.id,
-        correlationId: input.correlationId
+        correlationId: input.correlationId,
+        fromFolderId: context.document.current_drive_folder_id,
+        toFolderId: destinationFolderId,
+        targetFolderKey: classification.target_folder_key,
+        routingReason
       });
       throw new DriveMoveError(error instanceof Error ? error.message : "Drive move failed.");
     }
@@ -623,12 +627,24 @@ export async function processDocumentProcessingJob(
           ? "drive_move_error"
           : "ai_error";
 
-    logWarn(
+    const willRetry =
+      isDriveOrProviderError &&
+      !(error instanceof DocumentProcessingError) &&
+      shouldRetryAttempt(input.attempts);
+
+    logWarnWithError(
       failureReason === "drive_move_error" ? "Drive move failed" : "AI classification failed",
+      error,
       {
         businessId: context.business.id,
         documentId: context.document.id,
-        correlationId: input.correlationId
+        correlationId: input.correlationId,
+        attempt: input.attempts,
+        willRetry,
+        failureReason,
+        captureContext: context.document.capture_context,
+        mimeType: context.document.mime_type,
+        currentDriveFolderId: context.document.current_drive_folder_id
       }
     );
 
@@ -642,11 +658,7 @@ export async function processDocumentProcessingJob(
       attemptNeedsReviewMove: failureReason === "ai_error"
     });
 
-    if (
-      isDriveOrProviderError &&
-      !(error instanceof DocumentProcessingError) &&
-      shouldRetryAttempt(input.attempts)
-    ) {
+    if (willRetry) {
       throw error;
     }
 

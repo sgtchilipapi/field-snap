@@ -53,6 +53,30 @@ function createGeminiResponse(text: string, ok = true) {
   );
 }
 
+function createGeminiErrorResponse(input: {
+  status: number;
+  statusText: string;
+  providerStatus: string;
+  providerMessage: string;
+}) {
+  return new Response(
+    JSON.stringify({
+      error: {
+        code: input.status,
+        message: input.providerMessage,
+        status: input.providerStatus,
+      },
+    }),
+    {
+      status: input.status,
+      statusText: input.statusText,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+  );
+}
+
 function createProvider() {
   return new GeminiAIProvider();
 }
@@ -151,6 +175,31 @@ describe("GeminiAIProvider", () => {
       confidence: 1,
       valid: true,
       normalization_error_code: null,
+    });
+  });
+
+  it("preserves Gemini error details when the provider rejects a request", async () => {
+    vi.mocked(global.fetch).mockResolvedValue(
+      createGeminiErrorResponse({
+        status: 400,
+        statusText: "Bad Request",
+        providerStatus: "INVALID_ARGUMENT",
+        providerMessage:
+          "Invalid JSON payload received. Unknown name responseJsonSchema at generationConfig.",
+      }),
+    );
+
+    await expect(
+      createProvider().classifyDocument(createInput()),
+    ).rejects.toMatchObject({
+      name: "GeminiClassificationApiError",
+      message:
+        "Gemini classification failed: 400 Bad Request: Invalid JSON payload received. Unknown name responseJsonSchema at generationConfig.",
+      status: 400,
+      statusText: "Bad Request",
+      providerErrorStatus: "INVALID_ARGUMENT",
+      providerErrorMessage:
+        "Invalid JSON payload received. Unknown name responseJsonSchema at generationConfig.",
     });
   });
 

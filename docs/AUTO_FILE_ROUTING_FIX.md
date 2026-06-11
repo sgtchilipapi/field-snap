@@ -65,6 +65,10 @@ The follow-up fix keeps backend routing rules unchanged but reduces avoidable re
 1. Adding a Gemini structured-output JSON schema for the exact normalized classification fields.
 2. Explicitly instructing the model that clear job photos should normally target `job_photos` and that null metadata alone is not a review reason.
 
+## Worker failure logging follow-up
+
+The generic `AI classification failed` warning was not enough to diagnose production failures because it omitted the underlying error object. Worker warnings now include safe error details, retry intent, attempt count, capture context, MIME type, and current Drive folder. Gemini non-2xx responses now preserve the provider status and provider message in the thrown error so backend logs can distinguish schema/request errors, auth/quota errors, transient provider errors, and local routing failures without exposing Drive tokens or image bytes.
+
 ## Verification
 
 Run:
