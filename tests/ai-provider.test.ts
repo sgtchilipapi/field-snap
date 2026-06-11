@@ -13,7 +13,7 @@ const receiptFixture = {
   due_date: null,
   confidence: 0.98,
   needs_review: false,
-  reason: "Retail receipt with vendor, date, and total."
+  reason: "Retail receipt with vendor, date, and total.",
 };
 
 const jobPhotoFixture = {
@@ -28,7 +28,7 @@ const jobPhotoFixture = {
   due_date: null,
   confidence: 1.2,
   needs_review: false,
-  reason: "On-site progress photo."
+  reason: "On-site progress photo.",
 };
 
 const originalFetch = global.fetch;
@@ -39,17 +39,41 @@ function createGeminiResponse(text: string, ok = true) {
       candidates: [
         {
           content: {
-            parts: [{ text }]
-          }
-        }
-      ]
+            parts: [{ text }],
+          },
+        },
+      ],
     }),
     {
       status: ok ? 200 : 500,
       headers: {
-        "Content-Type": "application/json"
-      }
-    }
+        "Content-Type": "application/json",
+      },
+    },
+  );
+}
+
+function createGeminiErrorResponse(input: {
+  status: number;
+  statusText: string;
+  providerStatus: string;
+  providerMessage: string;
+}) {
+  return new Response(
+    JSON.stringify({
+      error: {
+        code: input.status,
+        message: input.providerMessage,
+        status: input.providerStatus,
+      },
+    }),
+    {
+      status: input.status,
+      statusText: input.statusText,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
   );
 }
 
@@ -66,13 +90,13 @@ function createInput() {
     job: {
       clientName: "Smith Residence",
       jobName: "Backyard Cleanup",
-      category: "Landscaping"
+      category: "Landscaping",
     },
     allowedTargetFolders: [
       { key: "receipts", name: "01 Receipts" },
       { key: "job_photos", name: "04 Job Photos" },
-      { key: "needs_review", name: "99 Needs Review" }
-    ]
+      { key: "needs_review", name: "99 Needs Review" },
+    ],
   };
 }
 
@@ -86,8 +110,44 @@ describe("GeminiAIProvider", () => {
     vi.resetAllMocks();
   });
 
+  it("requests schema-constrained JSON from Gemini", async () => {
+    vi.mocked(global.fetch).mockResolvedValue(
+      createGeminiResponse(JSON.stringify(receiptFixture)),
+    );
+
+    await createProvider().classifyDocument(createInput());
+
+    const [, requestInit] = vi.mocked(global.fetch).mock.calls[0];
+    const body = JSON.parse(String(requestInit?.body));
+
+    expect(body.generationConfig).toMatchObject({
+      responseMimeType: "application/json",
+      temperature: 0,
+    });
+    expect(body.generationConfig.responseJsonSchema).toMatchObject({
+      type: "object",
+      additionalProperties: false,
+      required: expect.arrayContaining([
+        "document_type",
+        "target_folder_key",
+        "confidence",
+        "needs_review",
+        "reason",
+      ]),
+    });
+    expect(
+      body.generationConfig.responseJsonSchema.properties.document_type.enum,
+    ).toContain("job_photo");
+    expect(
+      body.generationConfig.responseJsonSchema.properties.suggested_filename
+        .type,
+    ).toEqual(["string", "null"]);
+  });
+
   it("returns a normalized receipt classification for clear output", async () => {
-    vi.mocked(global.fetch).mockResolvedValue(createGeminiResponse(JSON.stringify(receiptFixture)));
+    vi.mocked(global.fetch).mockResolvedValue(
+      createGeminiResponse(JSON.stringify(receiptFixture)),
+    );
 
     const result = await createProvider().classifyDocument(createInput());
 
@@ -98,12 +158,14 @@ describe("GeminiAIProvider", () => {
       confidence: 0.98,
       needs_review: false,
       valid: true,
-      normalization_error_code: null
+      normalization_error_code: null,
     });
   });
 
   it("clamps confidence after schema parsing for a clear job photo", async () => {
-    vi.mocked(global.fetch).mockResolvedValue(createGeminiResponse(JSON.stringify(jobPhotoFixture)));
+    vi.mocked(global.fetch).mockResolvedValue(
+      createGeminiResponse(JSON.stringify(jobPhotoFixture)),
+    );
 
     const result = await createProvider().classifyDocument(createInput());
 
@@ -112,13 +174,40 @@ describe("GeminiAIProvider", () => {
       target_folder_key: "job_photos",
       confidence: 1,
       valid: true,
-      normalization_error_code: null
+      normalization_error_code: null,
+    });
+  });
+
+  it("preserves Gemini error details when the provider rejects a request", async () => {
+    vi.mocked(global.fetch).mockResolvedValue(
+      createGeminiErrorResponse({
+        status: 400,
+        statusText: "Bad Request",
+        providerStatus: "INVALID_ARGUMENT",
+        providerMessage:
+          "Invalid JSON payload received. Unknown name responseJsonSchema at generationConfig.",
+      }),
+    );
+
+    await expect(
+      createProvider().classifyDocument(createInput()),
+    ).rejects.toMatchObject({
+      name: "GeminiClassificationApiError",
+      message:
+        "Gemini classification failed: 400 Bad Request: Invalid JSON payload received. Unknown name responseJsonSchema at generationConfig.",
+      status: 400,
+      statusText: "Bad Request",
+      providerErrorStatus: "INVALID_ARGUMENT",
+      providerErrorMessage:
+        "Invalid JSON payload received. Unknown name responseJsonSchema at generationConfig.",
     });
   });
 
   it("downgrades invalid JSON into a needs-review result", async () => {
     vi.mocked(global.fetch).mockResolvedValue(
-      createGeminiResponse('{"document_type":"receipt","target_folder_key":"receipts"')
+      createGeminiResponse(
+        '{"document_type":"receipt","target_folder_key":"receipts"',
+      ),
     );
 
     const result = await createProvider().classifyDocument(createInput());
@@ -128,7 +217,7 @@ describe("GeminiAIProvider", () => {
       needs_review: true,
       valid: false,
       reason: "AI returned invalid JSON and requires review.",
-      normalization_error_code: "invalid_json"
+      normalization_error_code: "invalid_json",
     });
   });
 
@@ -138,9 +227,9 @@ describe("GeminiAIProvider", () => {
         JSON.stringify({
           document_type: "receipt",
           target_folder_key: "receipts",
-          confidence: 0.99
-        })
-      )
+          confidence: 0.99,
+        }),
+      ),
     );
 
     const result = await createProvider().classifyDocument(createInput());
@@ -150,7 +239,7 @@ describe("GeminiAIProvider", () => {
       needs_review: true,
       valid: false,
       reason: "AI output failed schema validation and requires review.",
-      normalization_error_code: "schema_validation_failed"
+      normalization_error_code: "schema_validation_failed",
     });
   });
 
@@ -159,9 +248,9 @@ describe("GeminiAIProvider", () => {
       createGeminiResponse(
         JSON.stringify({
           ...receiptFixture,
-          target_folder_key: "bank_credit_card"
-        })
-      )
+          target_folder_key: "bank_credit_card",
+        }),
+      ),
     );
 
     const result = await createProvider().classifyDocument(createInput());
@@ -173,7 +262,7 @@ describe("GeminiAIProvider", () => {
       valid: false,
       reason:
         'AI selected unsupported target folder key "bank_credit_card" for job capture context and requires review.',
-      normalization_error_code: "unsupported_folder_key"
+      normalization_error_code: "unsupported_folder_key",
     });
   });
 });

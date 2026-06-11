@@ -53,6 +53,22 @@ These reasons should appear in:
 2. Worker structured logs
 3. `documents.ai_reason` when the AI output is invalid or unusable
 
+## Follow-up diagnosis: photos still over-routing to review
+
+A second in-repo pass found two remaining likely causes when every uploaded photo still lands in `99 Needs Review`:
+
+1. The Gemini request asked for JSON output but did not provide a response schema, so production output could still drift into schema-validation failures such as missing required nullable fields, wrong primitive types, or unsupported folder-key wording. The app intentionally converts those invalid provider outputs into `Needs Review`.
+2. The prompt treated the upload primarily as a document image and told the model to review ambiguity, but it did not explicitly say that a clear job-site/progress/material photo can be confidently auto-filed to `job_photos` even when no text, date, amount, vendor, invoice number, or filename metadata is visible. That can push real job photos toward `needs_review=true`, which the backend correctly treats as a hard review signal.
+
+The follow-up fix keeps backend routing rules unchanged but reduces avoidable review outcomes by:
+
+1. Adding a Gemini structured-output JSON schema for the exact normalized classification fields.
+2. Explicitly instructing the model that clear job photos should normally target `job_photos` and that null metadata alone is not a review reason.
+
+## Worker failure logging follow-up
+
+The generic `AI classification failed` warning was not enough to diagnose production failures because it omitted the underlying error object. Worker warnings now include safe error details, retry intent, attempt count, capture context, MIME type, and current Drive folder. Gemini non-2xx responses now preserve the provider status and provider message in the thrown error so backend logs can distinguish schema/request errors, auth/quota errors, transient provider errors, and local routing failures without exposing Drive tokens or image bytes.
+
 ## Verification
 
 Run:

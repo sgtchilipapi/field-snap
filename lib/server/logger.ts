@@ -19,7 +19,12 @@ function toErrorPayload(error: unknown) {
     return {
       message: error.message,
       stack: error.stack,
-      name: error.name
+      name: error.name,
+      ...Object.fromEntries(
+        Object.entries(error).filter(
+          ([key]) => !["message", "stack", "name"].includes(key),
+        ),
+      ),
     };
   }
 
@@ -48,13 +53,13 @@ export function getRequestId(request?: RequestLike) {
 
 export function getRequestContext(
   request?: RequestLike,
-  context: LogContext = {}
+  context: LogContext = {},
 ): LogContext {
   return {
     requestId: context.requestId ?? getRequestId(request),
     route: context.route ?? request?.url ?? undefined,
     method: request?.method,
-    ...context
+    ...context,
   };
 }
 
@@ -62,14 +67,14 @@ function writeLog(
   level: "info" | "warn" | "error",
   message: string,
   error?: unknown,
-  context?: LogContext
+  context?: LogContext,
 ) {
   const payload = {
     level,
     message,
     context,
     error: error === undefined ? undefined : toErrorPayload(error),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   if (level === "error") {
@@ -93,6 +98,18 @@ export function logWarn(message: string, context?: LogContext) {
   writeLog("warn", message, undefined, context);
 }
 
-export function logError(message: string, error?: unknown, context?: LogContext) {
+export function logWarnWithError(
+  message: string,
+  error: unknown,
+  context?: LogContext,
+) {
+  writeLog("warn", message, error, context);
+}
+
+export function logError(
+  message: string,
+  error?: unknown,
+  context?: LogContext,
+) {
   writeLog("error", message, error, context);
 }
