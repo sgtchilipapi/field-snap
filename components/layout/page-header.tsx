@@ -4,7 +4,7 @@ export function PageHeader({
   description
 }: {
   eyebrow: string;
-  title: string;
+  title?: string;
   description?: string;
 }) {
   return (
@@ -12,7 +12,7 @@ export function PageHeader({
       <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[color:var(--muted)]">
         {eyebrow}
       </p>
-      <h1 className="text-[1.75rem] font-semibold tracking-tight md:text-[2.2rem]">{title}</h1>
+      <h3 className="text-[1rem] font-semibold tracking-tight md:text-[1.1rem]">{title}</h3>
       {description ? (
         <p className="max-w-3xl text-sm leading-6 text-[color:var(--muted)] md:text-[0.98rem]">
           {description}

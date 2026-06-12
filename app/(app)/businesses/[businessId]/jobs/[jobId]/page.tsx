@@ -38,7 +38,7 @@ export default async function JobDetailsPage({
           className="inline-flex text-sm italic text-[color:var(--muted)] transition hover:text-[color:var(--foreground)]"
           href={`/businesses/${businessId}/jobs`}
         >
-          {"<- Back"}
+          {"<- Back to Jobs"}
         </Link>
       </div>
       <PageHeader

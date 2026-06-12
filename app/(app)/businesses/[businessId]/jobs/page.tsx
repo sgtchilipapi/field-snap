@@ -47,14 +47,6 @@ export default async function BusinessJobsPage({
 
   return (
     <div className="space-y-3">
-      <div>
-        <Link
-          className="inline-flex text-sm italic text-[color:var(--muted)] transition hover:text-[color:var(--foreground)]"
-          href="/businesses"
-        >
-          {"<- Back"}
-        </Link>
-      </div>
       <PageHeader
         eyebrow="Jobs for"
         title={details.business.name}

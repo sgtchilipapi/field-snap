@@ -16,7 +16,7 @@
   --success: #356b4c;
   --danger: #9f3f32;
   --shadow-shell: 0 24px 80px rgba(18, 36, 58, 0.12);
-  --top-bar-height: 4.75rem;
+  --top-bar-height: 2rem;
   --bottom-nav-offset: calc(6.5rem + env(safe-area-inset-bottom));
 }
 
@@ -64,7 +64,7 @@ button,
 input,
 textarea,
 select {
-  min-height: 2.875rem;
+  min-height: 2rem;
 }
 
 input,
