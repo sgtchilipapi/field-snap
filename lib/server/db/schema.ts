@@ -24,6 +24,7 @@ export type BusinessMembershipRow = {
   user_id: string;
   role: "owner_admin" | "reviewer" | "field_user";
   status: "active" | "disabled";
+  last_opened_at: Date | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -146,6 +147,13 @@ export type InvitationRow = {
   expires_at: Date;
   created_at: Date;
   accepted_at: Date | null;
+};
+
+export type UserJobRecentRow = {
+  user_id: string;
+  business_id: string;
+  job_id: string;
+  last_opened_at: Date;
 };
 
 export type AuditLogRow = {

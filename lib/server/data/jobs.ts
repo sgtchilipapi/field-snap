@@ -4,6 +4,7 @@ import type { JobRow } from "@/lib/server/db/schema";
 export type JobWithCategoryRow = JobRow & {
   category_name: string;
   category_slug: string;
+  last_opened_at: Date | null;
 };
 
 function mapJob(row: JobRow): JobRow {
@@ -21,7 +22,7 @@ function mapJob(row: JobRow): JobRow {
     status: row.status,
     created_by_user_id: row.created_by_user_id,
     created_at: row.created_at,
-    updated_at: row.updated_at
+    updated_at: row.updated_at,
   };
 }
 
@@ -29,7 +30,8 @@ function mapJobWithCategory(row: JobWithCategoryRow): JobWithCategoryRow {
   return {
     ...mapJob(row),
     category_name: row.category_name,
-    category_slug: row.category_slug
+    category_slug: row.category_slug,
+    last_opened_at: row.last_opened_at,
   };
 }
 
@@ -97,10 +99,12 @@ export async function listJobsForBusiness(input: {
   status?: "active" | "completed" | "archived" | "all";
   categoryId?: string | null;
   search?: string | null;
+  userId?: string | null;
 }) {
   const statusFilter = input.status ?? "active";
   const categoryId = input.categoryId ?? null;
   const search = input.search?.trim() ? `%${input.search.trim()}%` : null;
+  const userId = input.userId ?? null;
 
   const rows = await db<JobWithCategoryRow[]>`
     select
@@ -119,9 +123,13 @@ export async function listJobsForBusiness(input: {
       j.created_at,
       j.updated_at,
       c.name as category_name,
-      c.slug as category_slug
+      c.slug as category_slug,
+      ujr.last_opened_at as last_opened_at
     from jobs j
     inner join categories c on c.id = j.category_id
+    left join user_job_recents ujr
+      on ujr.job_id = j.id
+      and ujr.user_id = ${userId}
     where j.business_id = ${input.businessId}
       and (${statusFilter} = 'all' or j.status = ${statusFilter})
       and (${categoryId}::uuid is null or j.category_id = ${categoryId})
@@ -131,7 +139,7 @@ export async function listJobsForBusiness(input: {
         or j.job_name ilike ${search}
         or coalesce(j.address, '') ilike ${search}
       )
-    order by j.created_at desc
+    order by ujr.last_opened_at desc nulls last, j.created_at desc
     limit 100
   `;
 
@@ -178,7 +186,8 @@ export async function getJobForBusiness(businessId: string, jobId: string) {
       j.created_at,
       j.updated_at,
       c.name as category_name,
-      c.slug as category_slug
+      c.slug as category_slug,
+      null::timestamptz as last_opened_at
     from jobs j
     inner join categories c on c.id = j.category_id
     where j.business_id = ${businessId}
@@ -232,7 +241,7 @@ export async function updateJob(input: {
 export async function updateJobStatus(
   jobId: string,
   businessId: string,
-  status: JobRow["status"]
+  status: JobRow["status"],
 ) {
   const rows = await db<JobRow[]>`
     update jobs
@@ -263,4 +272,28 @@ export async function updateJobStatus(
 
 export async function archiveJob(jobId: string, businessId: string) {
   return updateJobStatus(jobId, businessId, "archived");
+}
+
+export async function markJobOpenedForUser(input: {
+  businessId: string;
+  jobId: string;
+  userId: string;
+}) {
+  const rows = await db<Array<{ job_id: string; last_opened_at: Date }>>`
+    insert into user_job_recents (user_id, business_id, job_id, last_opened_at)
+    select ${input.userId}, ${input.businessId}, ${input.jobId}, now()
+    where exists (
+      select 1
+      from jobs
+      where id = ${input.jobId}
+        and business_id = ${input.businessId}
+    )
+    on conflict (user_id, job_id) do update
+    set
+      business_id = excluded.business_id,
+      last_opened_at = excluded.last_opened_at
+    returning job_id, last_opened_at
+  `;
+
+  return rows[0] ?? null;
 }

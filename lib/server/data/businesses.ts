@@ -1,5 +1,8 @@
 import { db } from "@/lib/server/db/client";
-import type { BusinessMembershipRow, BusinessRow } from "@/lib/server/db/schema";
+import type {
+  BusinessMembershipRow,
+  BusinessRow,
+} from "@/lib/server/db/schema";
 
 export type BusinessListItem = {
   id: string;
@@ -7,6 +10,7 @@ export type BusinessListItem = {
   role: BusinessMembershipRow["role"];
   status: BusinessMembershipRow["status"];
   driveConnected: boolean;
+  lastOpenedAt: Date | null;
 };
 
 export type BusinessDetails = {
@@ -33,7 +37,7 @@ function mapBusiness(row: {
     drive_root_folder_id: row.drive_root_folder_id,
     general_docs_folder_id: row.general_docs_folder_id,
     created_at: row.created_at,
-    updated_at: row.updated_at
+    updated_at: row.updated_at,
   };
 }
 
@@ -66,24 +70,27 @@ export async function createBusinessForOwner(input: {
   });
 }
 
-export async function getBusinessesForUser(userId: string): Promise<BusinessListItem[]> {
+export async function getBusinessesForUser(
+  userId: string,
+): Promise<BusinessListItem[]> {
   return db<BusinessListItem[]>`
     select
       b.id as "id",
       b.name as "name",
       bm.role as "role",
       bm.status as "status",
-      (b.drive_root_folder_id is not null) as "driveConnected"
+      (b.drive_root_folder_id is not null) as "driveConnected",
+      bm.last_opened_at as "lastOpenedAt"
     from business_memberships bm
     inner join businesses b on b.id = bm.business_id
     where bm.user_id = ${userId}
-    order by b.name asc
+    order by bm.last_opened_at desc nulls last, b.name asc
   `;
 }
 
 export async function getBusinessForUser(
   businessId: string,
-  userId: string
+  userId: string,
 ): Promise<BusinessDetails | null> {
   const rows = await db<
     Array<{
@@ -125,12 +132,15 @@ export async function getBusinessForUser(
     business: mapBusiness(row),
     membership: {
       role: row.role,
-      status: row.status
-    }
+      status: row.status,
+    },
   };
 }
 
-export async function updateBusinessDriveRootFolder(businessId: string, driveRootFolderId: string) {
+export async function updateBusinessDriveRootFolder(
+  businessId: string,
+  driveRootFolderId: string,
+) {
   const rows = await db<BusinessRow[]>`
     update businesses
     set
@@ -152,7 +162,7 @@ export async function updateBusinessDriveRootFolder(businessId: string, driveRoo
 
 export async function updateBusinessGeneralDocsFolder(
   businessId: string,
-  generalDocsFolderId: string
+  generalDocsFolderId: string,
 ) {
   const rows = await db<BusinessRow[]>`
     update businesses
@@ -189,4 +199,44 @@ export async function getBusinessById(businessId: string) {
   `;
 
   return rows[0] ? mapBusiness(rows[0]) : null;
+}
+
+export async function markBusinessOpenedForUser(input: {
+  businessId: string;
+  userId: string;
+}) {
+  const rows = await db<Array<{ business_id: string; last_opened_at: Date }>>`
+    update business_memberships
+    set
+      last_opened_at = now(),
+      updated_at = now()
+    where business_id = ${input.businessId}
+      and user_id = ${input.userId}
+      and status = 'active'
+    returning business_id, last_opened_at
+  `;
+
+  return rows[0] ?? null;
+}
+
+export async function getMostRecentlyOpenedBusinessForUser(
+  userId: string,
+): Promise<BusinessListItem | null> {
+  const rows = await db<BusinessListItem[]>`
+    select
+      b.id as "id",
+      b.name as "name",
+      bm.role as "role",
+      bm.status as "status",
+      (b.drive_root_folder_id is not null) as "driveConnected",
+      bm.last_opened_at as "lastOpenedAt"
+    from business_memberships bm
+    inner join businesses b on b.id = bm.business_id
+    where bm.user_id = ${userId}
+      and bm.status = 'active'
+    order by bm.last_opened_at desc nulls last, b.created_at desc
+    limit 1
+  `;
+
+  return rows[0] ?? null;
 }
