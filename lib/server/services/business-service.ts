@@ -4,8 +4,10 @@ import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorizatio
 import {
   createBusinessForOwner,
   getBusinessesForUser,
+  getMostRecentlyOpenedBusinessForUser,
+  markBusinessOpenedForUser,
   type BusinessDetails,
-  type BusinessListItem
+  type BusinessListItem,
 } from "@/lib/server/data/businesses";
 
 export const createBusinessSchema = z.object({
@@ -13,10 +15,12 @@ export const createBusinessSchema = z.object({
     .string()
     .trim()
     .min(1, "Business name is required.")
-    .max(120, "Business name must be 120 characters or fewer.")
+    .max(120, "Business name must be 120 characters or fewer."),
 });
 
-export function getBusinessLandingPath(business: Pick<BusinessListItem, "id" | "driveConnected" | "role">) {
+export function getBusinessLandingPath(
+  business: Pick<BusinessListItem, "id" | "driveConnected" | "role">,
+) {
   if (business.role === "owner_admin" && !business.driveConnected) {
     return `/businesses/${business.id}/settings`;
   }
@@ -28,7 +32,7 @@ export async function createBusiness(input: unknown, ownerUserId: string) {
   const parsed = createBusinessSchema.parse(input);
   const business = await createBusinessForOwner({
     name: parsed.name,
-    ownerUserId
+    ownerUserId,
   });
 
   await recordAuditEvent({
@@ -39,8 +43,8 @@ export async function createBusiness(input: unknown, ownerUserId: string) {
     action: AUDIT_ACTIONS.businessCreated,
     newValue: {
       name: business.name,
-      owner_user_id: business.owner_user_id
-    }
+      owner_user_id: business.owner_user_id,
+    },
   });
 
   return business;
@@ -52,23 +56,53 @@ export async function listBusinessesForUser(userId: string) {
 
 export async function getBusinessDetailsForUser(
   businessId: string,
-  userId: string
+  userId: string,
 ): Promise<BusinessDetails | null> {
   const authorization = await authorizeBusinessAccess({
     businessId,
     userId,
-    capability: "business:view"
+    capability: "business:view",
   });
 
   return authorization.allowed ? authorization.details : null;
 }
 
-export async function getBusinessOwnerDetailsForUser(businessId: string, userId: string) {
+export async function getBusinessOwnerDetailsForUser(
+  businessId: string,
+  userId: string,
+) {
   const authorization = await authorizeBusinessAccess({
     businessId,
     userId,
-    capability: "drive:manage"
+    capability: "drive:manage",
   });
 
   return authorization.allowed ? authorization.details : null;
+}
+
+export async function recordBusinessOpenedForUser(input: {
+  businessId: string;
+  userId: string;
+}) {
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.userId,
+    capability: "business:view",
+  });
+
+  if (!authorization.allowed) {
+    return null;
+  }
+
+  return markBusinessOpenedForUser(input);
+}
+
+export async function getMostRecentBusinessJobsPathForUser(userId: string) {
+  const business = await getMostRecentlyOpenedBusinessForUser(userId);
+
+  if (!business) {
+    return null;
+  }
+
+  return `/businesses/${business.id}/jobs`;
 }

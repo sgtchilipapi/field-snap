@@ -5,57 +5,57 @@ vi.mock("@/lib/server/audit/logs", () => ({
     documentAiClassified: "document.ai_classified",
     documentAutoFiled: "document.auto_filed",
     documentMoved: "document.moved",
-    documentRenamed: "document.renamed"
+    documentRenamed: "document.renamed",
   },
-  recordAuditEvent: vi.fn()
+  recordAuditEvent: vi.fn(),
 }));
 
 vi.mock("@/lib/server/data/businesses", () => ({
-  getBusinessById: vi.fn()
+  getBusinessById: vi.fn(),
 }));
 
 vi.mock("@/lib/server/data/document-processing-jobs", () => ({
   claimNextDocumentProcessingJob: vi.fn(),
   completeDocumentProcessingJob: vi.fn(),
   failDocumentProcessingJob: vi.fn(),
-  retryDocumentProcessingJob: vi.fn()
+  retryDocumentProcessingJob: vi.fn(),
 }));
 
 vi.mock("@/lib/server/data/documents", () => ({
   getDocumentById: vi.fn(),
   updateDocumentAiFields: vi.fn(),
-  updateDocumentProcessingState: vi.fn()
+  updateDocumentProcessingState: vi.fn(),
 }));
 
 vi.mock("@/lib/server/data/drive-connections", () => ({
   getDriveConnectionForBusiness: vi.fn(),
-  updateDriveConnectionStatus: vi.fn()
+  updateDriveConnectionStatus: vi.fn(),
 }));
 
 vi.mock("@/lib/server/data/general-folders", () => ({
-  getGeneralFoldersForBusiness: vi.fn()
+  getGeneralFoldersForBusiness: vi.fn(),
 }));
 
 vi.mock("@/lib/server/data/job-folders", () => ({
-  listJobFolders: vi.fn()
+  listJobFolders: vi.fn(),
 }));
 
 vi.mock("@/lib/server/data/jobs", () => ({
-  getJobForBusiness: vi.fn()
+  getJobForBusiness: vi.fn(),
 }));
 
 vi.mock("@/lib/server/data/users", () => ({
-  findUserById: vi.fn()
+  findUserById: vi.fn(),
 }));
 
 vi.mock("@/lib/server/integrations/google/drive", () => ({
   getGoogleDriveFileBytes: vi.fn(),
   moveGoogleDriveFile: vi.fn(),
-  renameGoogleDriveFile: vi.fn()
+  renameGoogleDriveFile: vi.fn(),
 }));
 
 vi.mock("@/lib/server/security/encryption", () => ({
-  decryptSecret: vi.fn()
+  decryptSecret: vi.fn(),
 }));
 
 import { recordAuditEvent } from "@/lib/server/audit/logs";
@@ -64,16 +64,16 @@ import {
   claimNextDocumentProcessingJob,
   completeDocumentProcessingJob,
   failDocumentProcessingJob,
-  retryDocumentProcessingJob
+  retryDocumentProcessingJob,
 } from "@/lib/server/data/document-processing-jobs";
 import {
   getDocumentById,
   updateDocumentAiFields,
-  updateDocumentProcessingState
+  updateDocumentProcessingState,
 } from "@/lib/server/data/documents";
 import {
   getDriveConnectionForBusiness,
-  updateDriveConnectionStatus
+  updateDriveConnectionStatus,
 } from "@/lib/server/data/drive-connections";
 import { getGeneralFoldersForBusiness } from "@/lib/server/data/general-folders";
 import { listJobFolders } from "@/lib/server/data/job-folders";
@@ -82,23 +82,35 @@ import { findUserById } from "@/lib/server/data/users";
 import {
   getGoogleDriveFileBytes,
   moveGoogleDriveFile,
-  renameGoogleDriveFile
+  renameGoogleDriveFile,
 } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
 import { runNextDocumentProcessingJob } from "@/lib/server/services/document-processing-service";
 
 const mockedRecordAuditEvent = vi.mocked(recordAuditEvent);
 const mockedGetBusinessById = vi.mocked(getBusinessById);
-const mockedClaimNextDocumentProcessingJob = vi.mocked(claimNextDocumentProcessingJob);
-const mockedCompleteDocumentProcessingJob = vi.mocked(completeDocumentProcessingJob);
+const mockedClaimNextDocumentProcessingJob = vi.mocked(
+  claimNextDocumentProcessingJob,
+);
+const mockedCompleteDocumentProcessingJob = vi.mocked(
+  completeDocumentProcessingJob,
+);
 const mockedFailDocumentProcessingJob = vi.mocked(failDocumentProcessingJob);
 const mockedRetryDocumentProcessingJob = vi.mocked(retryDocumentProcessingJob);
 const mockedGetDocumentById = vi.mocked(getDocumentById);
 const mockedUpdateDocumentAiFields = vi.mocked(updateDocumentAiFields);
-const mockedUpdateDocumentProcessingState = vi.mocked(updateDocumentProcessingState);
-const mockedGetDriveConnectionForBusiness = vi.mocked(getDriveConnectionForBusiness);
-const mockedUpdateDriveConnectionStatus = vi.mocked(updateDriveConnectionStatus);
-const mockedGetGeneralFoldersForBusiness = vi.mocked(getGeneralFoldersForBusiness);
+const mockedUpdateDocumentProcessingState = vi.mocked(
+  updateDocumentProcessingState,
+);
+const mockedGetDriveConnectionForBusiness = vi.mocked(
+  getDriveConnectionForBusiness,
+);
+const mockedUpdateDriveConnectionStatus = vi.mocked(
+  updateDriveConnectionStatus,
+);
+const mockedGetGeneralFoldersForBusiness = vi.mocked(
+  getGeneralFoldersForBusiness,
+);
 const mockedListJobFolders = vi.mocked(listJobFolders);
 const mockedGetJobForBusiness = vi.mocked(getJobForBusiness);
 const mockedFindUserById = vi.mocked(findUserById);
@@ -109,7 +121,7 @@ const mockedDecryptSecret = vi.mocked(decryptSecret);
 
 function createProvider(result: unknown | Promise<unknown>) {
   return {
-    classifyDocument: vi.fn().mockImplementation(() => result)
+    classifyDocument: vi.fn().mockImplementation(() => result),
   };
 }
 
@@ -125,7 +137,7 @@ describe("document-processing-service", () => {
       attempts: 1,
       available_at: new Date(),
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     });
     mockedGetDocumentById.mockResolvedValue({
       id: "document-1",
@@ -155,7 +167,7 @@ describe("document-processing-service", () => {
       ai_raw_response: null,
       failure_reason: null,
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     });
     mockedGetBusinessById.mockResolvedValue({
       id: "business-1",
@@ -164,7 +176,7 @@ describe("document-processing-service", () => {
       drive_root_folder_id: "root-1",
       general_docs_folder_id: "general-1",
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     });
     mockedFindUserById.mockResolvedValue({
       id: "user-1",
@@ -173,7 +185,7 @@ describe("document-processing-service", () => {
       name: "Field User",
       avatar_url: null,
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     });
     mockedGetJobForBusiness.mockResolvedValue({
       id: "job-1",
@@ -191,7 +203,8 @@ describe("document-processing-service", () => {
       created_at: new Date(),
       updated_at: new Date(),
       category_name: "Landscaping",
-      category_slug: "landscaping"
+      category_slug: "landscaping",
+      last_opened_at: null,
     });
     mockedListJobFolders.mockResolvedValue([
       {
@@ -200,7 +213,7 @@ describe("document-processing-service", () => {
         folder_key: "in_process",
         folder_name: "00 In-Process",
         drive_folder_id: "in-process-1",
-        created_at: new Date()
+        created_at: new Date(),
       },
       {
         id: "folder-2",
@@ -208,7 +221,7 @@ describe("document-processing-service", () => {
         folder_key: "receipts",
         folder_name: "01 Receipts",
         drive_folder_id: "receipts-1",
-        created_at: new Date()
+        created_at: new Date(),
       },
       {
         id: "folder-3",
@@ -216,7 +229,7 @@ describe("document-processing-service", () => {
         folder_key: "vendor_bills",
         folder_name: "02 Vendor Bills",
         drive_folder_id: "vendor-bills-1",
-        created_at: new Date()
+        created_at: new Date(),
       },
       {
         id: "folder-4",
@@ -224,7 +237,7 @@ describe("document-processing-service", () => {
         folder_key: "customer_invoices",
         folder_name: "03 Customer Invoices",
         drive_folder_id: "customer-invoices-1",
-        created_at: new Date()
+        created_at: new Date(),
       },
       {
         id: "folder-5",
@@ -232,7 +245,7 @@ describe("document-processing-service", () => {
         folder_key: "job_photos",
         folder_name: "04 Job Photos",
         drive_folder_id: "job-photos-1",
-        created_at: new Date()
+        created_at: new Date(),
       },
       {
         id: "folder-6",
@@ -240,8 +253,8 @@ describe("document-processing-service", () => {
         folder_key: "needs_review",
         folder_name: "99 Needs Review",
         drive_folder_id: "needs-review-1",
-        created_at: new Date()
-      }
+        created_at: new Date(),
+      },
     ]);
     mockedGetGeneralFoldersForBusiness.mockResolvedValue([
       {
@@ -250,7 +263,7 @@ describe("document-processing-service", () => {
         folder_key: "in_process",
         folder_name: "00 In-Process",
         drive_folder_id: "general-in-process-1",
-        created_at: new Date()
+        created_at: new Date(),
       },
       {
         id: "general-folder-2",
@@ -258,7 +271,7 @@ describe("document-processing-service", () => {
         folder_key: "tax",
         folder_name: "03 Tax",
         drive_folder_id: "tax-1",
-        created_at: new Date()
+        created_at: new Date(),
       },
       {
         id: "general-folder-3",
@@ -266,8 +279,8 @@ describe("document-processing-service", () => {
         folder_key: "needs_review",
         folder_name: "99 Needs Review",
         drive_folder_id: "general-needs-review-1",
-        created_at: new Date()
-      }
+        created_at: new Date(),
+      },
     ]);
     mockedGetDriveConnectionForBusiness.mockResolvedValue({
       id: "connection-1",
@@ -279,19 +292,19 @@ describe("document-processing-service", () => {
       scopes: ["scope"],
       status: "active",
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     });
     mockedDecryptSecret.mockReturnValue("access-token");
     mockedGetGoogleDriveFileBytes.mockResolvedValue({
-      bytes: new Uint8Array([1, 2, 3])
+      bytes: new Uint8Array([1, 2, 3]),
     });
     mockedMoveGoogleDriveFile.mockResolvedValue({
       id: "drive-file-1",
-      name: "receipt.jpg"
+      name: "receipt.jpg",
     });
     mockedRenameGoogleDriveFile.mockResolvedValue({
       id: "drive-file-1",
-      name: "Home Depot - 182.44 - 2026-05-21.jpg"
+      name: "Home Depot - 182.44 - 2026-05-21.jpg",
     });
   });
 
@@ -313,8 +326,8 @@ describe("document-processing-service", () => {
         raw_provider_payload: { ok: true },
         valid: true,
         normalization_error_code: null,
-        normalization_error_details: null
-      })
+        normalization_error_details: null,
+      }),
     );
 
     const result = await runNextDocumentProcessingJob(provider as never);
@@ -322,35 +335,37 @@ describe("document-processing-service", () => {
     expect(result).toEqual({
       jobId: "processing-job-1",
       documentId: "document-1",
-      status: "auto_filed"
+      status: "auto_filed",
     });
     expect(mockedMoveGoogleDriveFile).toHaveBeenCalledWith(
       expect.objectContaining({
         fromFolderId: "in-process-1",
-        toFolderId: "receipts-1"
-      })
+        toFolderId: "receipts-1",
+      }),
     );
     expect(mockedRenameGoogleDriveFile).toHaveBeenCalledWith(
       expect.objectContaining({
-        filename: "Home Depot - 182.44 - 2026-05-21.jpg"
-      })
+        filename: "Home Depot - 182.44 - 2026-05-21.jpg",
+      }),
     );
     expect(mockedUpdateDocumentProcessingState).toHaveBeenLastCalledWith(
       expect.objectContaining({
         status: "auto_filed",
         currentDriveFolderId: "receipts-1",
-        failureReason: null
-      })
+        failureReason: null,
+      }),
     );
     expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "document.ai_classified",
         newValue: expect.objectContaining({
-          routing_reason: "auto_filed"
-        })
-      })
+          routing_reason: "auto_filed",
+        }),
+      }),
     );
-    expect(mockedCompleteDocumentProcessingJob).toHaveBeenCalledWith("processing-job-1");
+    expect(mockedCompleteDocumentProcessingJob).toHaveBeenCalledWith(
+      "processing-job-1",
+    );
     expect(mockedRecordAuditEvent).toHaveBeenCalled();
   });
 
@@ -372,8 +387,8 @@ describe("document-processing-service", () => {
         raw_provider_payload: { ok: true },
         valid: true,
         normalization_error_code: null,
-        normalization_error_details: null
-      })
+        normalization_error_details: null,
+      }),
     );
 
     const result = await runNextDocumentProcessingJob(provider as never);
@@ -381,20 +396,20 @@ describe("document-processing-service", () => {
     expect(result).toEqual({
       jobId: "processing-job-1",
       documentId: "document-1",
-      status: "auto_filed"
+      status: "auto_filed",
     });
     expect(mockedMoveGoogleDriveFile).toHaveBeenCalledWith(
       expect.objectContaining({
-        toFolderId: "receipts-1"
-      })
+        toFolderId: "receipts-1",
+      }),
     );
     expect(mockedRenameGoogleDriveFile).not.toHaveBeenCalled();
     expect(mockedUpdateDocumentProcessingState).toHaveBeenLastCalledWith(
       expect.objectContaining({
         status: "auto_filed",
         currentDriveFolderId: "receipts-1",
-        failureReason: null
-      })
+        failureReason: null,
+      }),
     );
   });
 
@@ -416,8 +431,8 @@ describe("document-processing-service", () => {
         raw_provider_payload: { ok: true },
         valid: true,
         normalization_error_code: null,
-        normalization_error_details: null
-      })
+        normalization_error_details: null,
+      }),
     );
 
     const result = await runNextDocumentProcessingJob(provider as never);
@@ -425,20 +440,20 @@ describe("document-processing-service", () => {
     expect(result).toEqual({
       jobId: "processing-job-1",
       documentId: "document-1",
-      status: "auto_filed"
+      status: "auto_filed",
     });
     expect(mockedMoveGoogleDriveFile).toHaveBeenCalledWith(
       expect.objectContaining({
-        toFolderId: "customer-invoices-1"
-      })
+        toFolderId: "customer-invoices-1",
+      }),
     );
     expect(mockedUpdateDocumentAiFields).toHaveBeenCalledWith(
       expect.objectContaining({
         documentType: "customer_invoice",
         targetFolderKey: "customer_invoices",
         vendorOrParty: "ABC Landscaping LLC",
-        aiReason: expect.stringContaining("matches the business name")
-      })
+        aiReason: expect.stringContaining("matches the business name"),
+      }),
     );
     expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -446,9 +461,9 @@ describe("document-processing-service", () => {
         newValue: expect.objectContaining({
           document_type: "customer_invoice",
           target_folder_key: "customer_invoices",
-          routing_reason: "auto_filed"
-        })
-      })
+          routing_reason: "auto_filed",
+        }),
+      }),
     );
   });
 
@@ -470,8 +485,8 @@ describe("document-processing-service", () => {
         raw_provider_payload: { ok: true },
         valid: true,
         normalization_error_code: null,
-        normalization_error_details: null
-      })
+        normalization_error_details: null,
+      }),
     );
 
     const result = await runNextDocumentProcessingJob(provider as never);
@@ -479,34 +494,34 @@ describe("document-processing-service", () => {
     expect(result).toEqual({
       jobId: "processing-job-1",
       documentId: "document-1",
-      status: "needs_review"
+      status: "needs_review",
     });
     expect(mockedMoveGoogleDriveFile).toHaveBeenCalledWith(
       expect.objectContaining({
-        toFolderId: "needs-review-1"
-      })
+        toFolderId: "needs-review-1",
+      }),
     );
     expect(mockedRenameGoogleDriveFile).not.toHaveBeenCalled();
     expect(mockedUpdateDocumentAiFields).toHaveBeenCalledWith(
       expect.objectContaining({
         documentType: "job_photo",
-        aiConfidence: 0.62
-      })
+        aiConfidence: 0.62,
+      }),
     );
     expect(mockedUpdateDocumentProcessingState).toHaveBeenLastCalledWith(
       expect.objectContaining({
         status: "needs_review",
         currentDriveFolderId: "needs-review-1",
-        failureReason: null
-      })
+        failureReason: null,
+      }),
     );
     expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "document.ai_classified",
         newValue: expect.objectContaining({
-          routing_reason: "review_low_confidence"
-        })
-      })
+          routing_reason: "review_low_confidence",
+        }),
+      }),
     );
   });
 
@@ -528,8 +543,8 @@ describe("document-processing-service", () => {
         raw_provider_payload: { ok: true },
         valid: true,
         normalization_error_code: null,
-        normalization_error_details: null
-      })
+        normalization_error_details: null,
+      }),
     );
 
     const result = await runNextDocumentProcessingJob(provider as never);
@@ -537,21 +552,21 @@ describe("document-processing-service", () => {
     expect(result).toEqual({
       jobId: "processing-job-1",
       documentId: "document-1",
-      status: "needs_review"
+      status: "needs_review",
     });
     expect(mockedMoveGoogleDriveFile).toHaveBeenCalledWith(
       expect.objectContaining({
-        toFolderId: "needs-review-1"
-      })
+        toFolderId: "needs-review-1",
+      }),
     );
     expect(mockedRenameGoogleDriveFile).not.toHaveBeenCalled();
     expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "document.ai_classified",
         newValue: expect.objectContaining({
-          routing_reason: "review_model_requested_review"
-        })
-      })
+          routing_reason: "review_model_requested_review",
+        }),
+      }),
     );
   });
 
@@ -584,7 +599,7 @@ describe("document-processing-service", () => {
       ai_raw_response: null,
       failure_reason: null,
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     });
 
     const provider = createProvider(
@@ -604,8 +619,8 @@ describe("document-processing-service", () => {
         raw_provider_payload: { ok: true },
         valid: true,
         normalization_error_code: null,
-        normalization_error_details: null
-      })
+        normalization_error_details: null,
+      }),
     );
 
     const result = await runNextDocumentProcessingJob(provider as never);
@@ -613,20 +628,20 @@ describe("document-processing-service", () => {
     expect(result).toEqual({
       jobId: "processing-job-1",
       documentId: "document-1",
-      status: "auto_filed"
+      status: "auto_filed",
     });
     expect(mockedMoveGoogleDriveFile).toHaveBeenCalledWith(
       expect.objectContaining({
         fromFolderId: "general-in-process-1",
-        toFolderId: "tax-1"
-      })
+        toFolderId: "tax-1",
+      }),
     );
     expect(mockedUpdateDocumentProcessingState).toHaveBeenLastCalledWith(
       expect.objectContaining({
         status: "auto_filed",
         currentDriveFolderId: "tax-1",
-        failureReason: null
-      })
+        failureReason: null,
+      }),
     );
   });
 
@@ -648,8 +663,8 @@ describe("document-processing-service", () => {
         raw_provider_payload: { ok: true },
         valid: true,
         normalization_error_code: null,
-        normalization_error_details: null
-      })
+        normalization_error_details: null,
+      }),
     );
 
     const result = await runNextDocumentProcessingJob(provider as never);
@@ -657,36 +672,40 @@ describe("document-processing-service", () => {
     expect(result).toEqual({
       jobId: "processing-job-1",
       documentId: "document-1",
-      status: "needs_review"
+      status: "needs_review",
     });
     expect(mockedRenameGoogleDriveFile).not.toHaveBeenCalled();
     expect(mockedRecordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "document.ai_classified",
         newValue: expect.objectContaining({
-          routing_reason: "review_needs_review_target"
-        })
-      })
+          routing_reason: "review_needs_review_target",
+        }),
+      }),
     );
   });
 
   it("retries a transient AI failure once and marks the document failed meanwhile", async () => {
-    const provider = createProvider(Promise.reject(new Error("provider timeout")));
+    const provider = createProvider(
+      Promise.reject(new Error("provider timeout")),
+    );
 
     const result = await runNextDocumentProcessingJob(provider as never);
 
     expect(result).toEqual({
       jobId: "processing-job-1",
       documentId: "document-1",
-      status: "retried"
+      status: "retried",
     });
-    expect(mockedRetryDocumentProcessingJob).toHaveBeenCalledWith("processing-job-1");
+    expect(mockedRetryDocumentProcessingJob).toHaveBeenCalledWith(
+      "processing-job-1",
+    );
     expect(mockedFailDocumentProcessingJob).not.toHaveBeenCalled();
     expect(mockedUpdateDocumentProcessingState).toHaveBeenLastCalledWith(
       expect.objectContaining({
         status: "failed",
-        failureReason: "ai_error"
-      })
+        failureReason: "ai_error",
+      }),
     );
   });
 
@@ -699,18 +718,22 @@ describe("document-processing-service", () => {
       attempts: 2,
       available_at: new Date(),
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     });
-    const provider = createProvider(Promise.reject(new Error("provider timeout")));
+    const provider = createProvider(
+      Promise.reject(new Error("provider timeout")),
+    );
 
     const result = await runNextDocumentProcessingJob(provider as never);
 
     expect(result).toEqual({
       jobId: "processing-job-1",
       documentId: "document-1",
-      status: "failed"
+      status: "failed",
     });
-    expect(mockedFailDocumentProcessingJob).toHaveBeenCalledWith("processing-job-1");
+    expect(mockedFailDocumentProcessingJob).toHaveBeenCalledWith(
+      "processing-job-1",
+    );
     expect(mockedRetryDocumentProcessingJob).not.toHaveBeenCalled();
   });
 
@@ -732,23 +755,25 @@ describe("document-processing-service", () => {
         raw_provider_payload: { ok: true },
         valid: true,
         normalization_error_code: null,
-        normalization_error_details: null
-      })
+        normalization_error_details: null,
+      }),
     );
-    mockedMoveGoogleDriveFile.mockRejectedValue(new Error("Google Drive file move failed: 500"));
+    mockedMoveGoogleDriveFile.mockRejectedValue(
+      new Error("Google Drive file move failed: 500"),
+    );
 
     const result = await runNextDocumentProcessingJob(provider as never);
 
     expect(result).toEqual({
       jobId: "processing-job-1",
       documentId: "document-1",
-      status: "retried"
+      status: "retried",
     });
     expect(mockedUpdateDocumentProcessingState).toHaveBeenLastCalledWith(
       expect.objectContaining({
         status: "failed",
-        failureReason: "drive_move_error"
-      })
+        failureReason: "drive_move_error",
+      }),
     );
     expect(mockedUpdateDriveConnectionStatus).not.toHaveBeenCalled();
   });
@@ -761,24 +786,28 @@ describe("document-processing-service", () => {
         folder_key: "in_process",
         folder_name: "00 In-Process",
         drive_folder_id: "in-process-1",
-        created_at: new Date()
-      }
+        created_at: new Date(),
+      },
     ]);
 
-    const result = await runNextDocumentProcessingJob(createProvider(Promise.resolve({})) as never);
+    const result = await runNextDocumentProcessingJob(
+      createProvider(Promise.resolve({})) as never,
+    );
 
     expect(result).toEqual({
       jobId: "processing-job-1",
       documentId: "document-1",
-      status: "failed"
+      status: "failed",
     });
     expect(mockedUpdateDocumentProcessingState).toHaveBeenLastCalledWith(
       expect.objectContaining({
         documentId: "document-1",
         status: "failed",
-        failureReason: "missing_folder_mapping"
-      })
+        failureReason: "missing_folder_mapping",
+      }),
     );
-    expect(mockedFailDocumentProcessingJob).toHaveBeenCalledWith("processing-job-1");
+    expect(mockedFailDocumentProcessingJob).toHaveBeenCalledWith(
+      "processing-job-1",
+    );
   });
 });

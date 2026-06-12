@@ -4,12 +4,20 @@ import {
   findUserByGoogleSub,
   getUserWithMemberships,
   updateUserFromGoogleProfile,
-  type GoogleUserRecord
+  type GoogleUserRecord,
 } from "@/lib/server/data/users";
 import type { GoogleIdentity } from "@/lib/server/integrations/google/oauth";
+import { getMostRecentBusinessJobsPathForUser } from "@/lib/server/services/business-service";
 
-export function getPostLoginRedirect(membershipCount: number) {
-  return membershipCount > 0 ? "/businesses" : "/businesses/new";
+export function getPostLoginRedirect(
+  membershipCount: number,
+  recentBusinessPath?: string | null,
+) {
+  if (membershipCount === 0) {
+    return "/businesses/new";
+  }
+
+  return recentBusinessPath ?? "/businesses";
 }
 
 function toGoogleUserRecord(identity: GoogleIdentity): GoogleUserRecord {
@@ -18,7 +26,7 @@ function toGoogleUserRecord(identity: GoogleIdentity): GoogleUserRecord {
     email: identity.email,
     emailVerified: identity.emailVerified,
     name: identity.name,
-    avatarUrl: identity.avatarUrl
+    avatarUrl: identity.avatarUrl,
   };
 }
 
@@ -26,7 +34,7 @@ export async function loginOrCreateUserFromGoogle(identity: GoogleIdentity) {
   if (!identity.emailVerified) {
     throw new AuthFlowError(
       "email_not_verified",
-      "Google did not return a verified email address."
+      "Google did not return a verified email address.",
     );
   }
 
@@ -38,16 +46,25 @@ export async function loginOrCreateUserFromGoogle(identity: GoogleIdentity) {
       const createdUser = await createUserFromGoogleProfile(profile);
       return {
         user: createdUser,
-        redirectTo: getPostLoginRedirect(0)
+        redirectTo: getPostLoginRedirect(0),
       };
     }
 
-    const updatedUser = await updateUserFromGoogleProfile(existingUser.id, profile);
+    const updatedUser = await updateUserFromGoogleProfile(
+      existingUser.id,
+      profile,
+    );
     const details = await getUserWithMemberships(updatedUser.id);
+
+    const membershipCount = details?.memberships.length ?? 0;
+    const recentBusinessPath =
+      membershipCount > 0
+        ? await getMostRecentBusinessJobsPathForUser(updatedUser.id)
+        : null;
 
     return {
       user: updatedUser,
-      redirectTo: getPostLoginRedirect(details?.memberships.length ?? 0)
+      redirectTo: getPostLoginRedirect(membershipCount, recentBusinessPath),
     };
   } catch (error) {
     if (
@@ -58,7 +75,7 @@ export async function loginOrCreateUserFromGoogle(identity: GoogleIdentity) {
     ) {
       throw new AuthFlowError(
         "unexpected",
-        "A duplicate user record blocked Google sign-in."
+        "A duplicate user record blocked Google sign-in.",
       );
     }
 
@@ -68,5 +85,11 @@ export async function loginOrCreateUserFromGoogle(identity: GoogleIdentity) {
 
 export async function getPostLoginRedirectForUser(userId: string) {
   const details = await getUserWithMemberships(userId);
-  return getPostLoginRedirect(details?.memberships.length ?? 0);
+  const membershipCount = details?.memberships.length ?? 0;
+  const recentBusinessPath =
+    membershipCount > 0
+      ? await getMostRecentBusinessJobsPathForUser(userId)
+      : null;
+
+  return getPostLoginRedirect(membershipCount, recentBusinessPath);
 }
