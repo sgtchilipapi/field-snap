@@ -54,20 +54,17 @@ export default async function LoginPage({
         <p className="text-sm uppercase tracking-[0.32em] text-[color:var(--muted)]">
           Fylerr
         </p>
-        <h1 className="mt-4 max-w-xl text-5xl font-semibold tracking-tight">
-          Never lose a document again.
+        <h1 className="mt-4 max-w-xl text-3xl italic font-semibold tracking-tight">
+          Faster sign-off, cleaner payout.
         </h1>
-        <p className="mt-3 text-2xl font-semibold text-[color:var(--muted)]">
-          Just snap a photo of it. It gets filed in your drive automatically.
+        <p className="mt-3 text-1xl font-semibold text-[color:var(--muted)]">
+          Admin works done for you so you can focus on profit-earning work.
         </p>
       </section>
 
       <section className="rounded-[2rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-8 shadow-shell backdrop-blur">
         <p className="text-sm uppercase tracking-[0.24em] text-[color:var(--muted)]">
           Authentication
-        </p>
-        <p className="mt-4 text-[color:var(--muted)]">
-          Fylerr uses Google identity for access.
         </p>
         <div className="mt-8 space-y-4">
           <GoogleLoginButton href={loginHref} />

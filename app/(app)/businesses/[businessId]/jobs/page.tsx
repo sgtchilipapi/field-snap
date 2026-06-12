@@ -58,7 +58,6 @@ export default async function BusinessJobsPage({
       <PageHeader
         eyebrow="Jobs for"
         title={details.business.name}
-        description="Create and manage jobs for this business."
       />
       <JobsWorkspace
         businessId={businessId}
