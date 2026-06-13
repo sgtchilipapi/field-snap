@@ -118,7 +118,7 @@ export default async function BusinessSettingsPage({
             <div className="flex flex-wrap gap-2">
               <form action={`/api/businesses/${businessId}/drive/connect`} method="post">
                 <button
-                  className="rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90"
+                  className={`rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90 ${driveConnected ? " hidden": ""}`}
                   type="submit"
                 >
                   Connect
@@ -127,7 +127,7 @@ export default async function BusinessSettingsPage({
               {hasDriveConnection ? (
                 <form action={`/api/businesses/${businessId}/drive/disconnect`} method="post">
                   <button
-                    className="rounded-full border border-[color:var(--border)] bg-white px-5 py-3 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
+                    className={`inline-flex rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)] ${driveConnected ? "": " hidden"}`}
                     type="submit"
                   >
                     Disconnect
