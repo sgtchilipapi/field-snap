@@ -20,6 +20,12 @@ import {
   updateJob as updateJobRecord,
   updateJobStatus as updateJobStatusRecord,
 } from "@/lib/server/data/jobs";
+import { enqueueDocumentProcessingJob } from "@/lib/server/data/document-processing-jobs";
+import {
+  getDocumentForBusiness,
+  listDocumentsForJob,
+  updateDocumentProcessingState,
+} from "@/lib/server/data/documents";
 import { decryptSecret } from "@/lib/server/security/encryption";
 import { createGoogleDriveFolderInParent } from "@/lib/server/integrations/google/drive";
 import type { CategoryRow } from "@/lib/server/db/schema";
@@ -406,6 +412,7 @@ export async function getJobDetailsForUser(
       membership: authorization.details.membership,
       job: null,
       folders: [],
+      documents: [],
     };
   }
 
@@ -419,7 +426,60 @@ export async function getJobDetailsForUser(
     membership: authorization.details.membership,
     job,
     folders: await listJobFolders(jobId),
+    documents: await listDocumentsForJob({ businessId, jobId }),
   };
+}
+
+export async function retryFailedJobDocument(input: {
+  businessId: string;
+  jobId: string;
+  documentId: string;
+  userId: string;
+}) {
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.userId,
+    capability: "documents:upload_job",
+  });
+
+  if (!authorization.allowed) {
+    throw new JobServiceError(
+      "You cannot retry uploads for this job.",
+      "forbidden",
+    );
+  }
+
+  const job = await getJobForBusiness(input.businessId, input.jobId);
+
+  if (!job) {
+    throw new JobServiceError("Job not found.", "not_found");
+  }
+
+  const document = await getDocumentForBusiness(
+    input.businessId,
+    input.documentId,
+  );
+
+  if (!document || document.job_id !== input.jobId) {
+    throw new JobServiceError("Document not found.", "not_found");
+  }
+
+  if (document.status !== "failed") {
+    return document;
+  }
+
+  await updateDocumentProcessingState({
+    documentId: input.documentId,
+    status: "ai_processing",
+    failureReason: null,
+  });
+
+  await enqueueDocumentProcessingJob({
+    documentId: input.documentId,
+    correlationId: crypto.randomUUID(),
+  });
+
+  return getDocumentForBusiness(input.businessId, input.documentId);
 }
 
 export async function updateJobForBusiness(input: {

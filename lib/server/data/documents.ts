@@ -13,7 +13,7 @@ export type DocumentListItemRow = DocumentRow & {
 
 function mapDocument(row: DocumentRow): DocumentRow {
   return {
-    ...row
+    ...row,
   };
 }
 
@@ -26,7 +26,7 @@ function mapDocumentListItem(row: DocumentListItemRow): DocumentListItemRow {
     uploader_email: row.uploader_email,
     job_client_name: row.job_client_name,
     job_job_name: row.job_job_name,
-    job_category_name: row.job_category_name
+    job_category_name: row.job_category_name,
   };
 }
 
@@ -218,7 +218,70 @@ export async function listDocumentsForBusiness(input: {
   return rows.map(mapDocumentListItem);
 }
 
-export async function getDocumentForBusiness(businessId: string, documentId: string) {
+export async function listDocumentsForJob(input: {
+  businessId: string;
+  jobId: string;
+  limit?: number;
+}) {
+  const limit = input.limit ?? 100;
+
+  const rows = await db<DocumentListItemRow[]>`
+    select
+      d.id,
+      d.business_id,
+      d.job_id,
+      d.uploaded_by_user_id,
+      d.capture_context,
+      d.original_drive_file_id,
+      d.current_drive_file_id,
+      d.current_drive_folder_id,
+      d.original_filename,
+      d.current_filename,
+      d.mime_type,
+      d.file_size_bytes,
+      d.status,
+      d.document_type,
+      d.target_folder_key,
+      d.vendor_or_party,
+      d.document_date::text as document_date,
+      d.amount::text as amount,
+      d.currency,
+      d.invoice_number,
+      d.due_date::text as due_date,
+      d.ai_confidence::text as ai_confidence,
+      d.ai_needs_review,
+      d.ai_reason,
+      d.ai_raw_response,
+      d.failure_reason,
+      d.created_at,
+      d.updated_at,
+      jf.folder_key as current_folder_key,
+      jf.folder_name as current_folder_name,
+      u.name as uploader_name,
+      u.email as uploader_email,
+      j.client_name as job_client_name,
+      j.job_name as job_job_name,
+      c.name as job_category_name
+    from documents d
+    inner join users u on u.id = d.uploaded_by_user_id
+    inner join jobs j on j.id = d.job_id
+    left join categories c on c.id = j.category_id
+    left join job_folders jf
+      on jf.job_id = d.job_id
+      and jf.drive_folder_id = d.current_drive_folder_id
+    where d.business_id = ${input.businessId}
+      and d.job_id = ${input.jobId}
+    order by d.created_at desc
+    limit ${limit}
+  `;
+
+  return rows.map(mapDocumentListItem);
+}
+
+export async function getDocumentForBusiness(
+  businessId: string,
+  documentId: string,
+) {
   const rows = await db<DocumentListItemRow[]>`
     select
       d.id,
@@ -352,7 +415,8 @@ export async function updateDocumentProcessingState(input: {
   failureReason?: string | null;
 }) {
   const currentDriveFolderId = input.currentDriveFolderId ?? null;
-  const currentFilename = input.currentFilename === undefined ? null : input.currentFilename;
+  const currentFilename =
+    input.currentFilename === undefined ? null : input.currentFilename;
   const shouldUpdateFilename = input.currentFilename !== undefined;
 
   const rows = await db<DocumentRow[]>`
@@ -417,19 +481,58 @@ export async function updateDocumentReviewFields(input: {
   dueDate?: string | null;
   failureReason?: string | null;
 }) {
-  const shouldUpdateJobId = Object.prototype.hasOwnProperty.call(input, "jobId");
-  const shouldUpdateCaptureContext = Object.prototype.hasOwnProperty.call(input, "captureContext");
-  const shouldUpdateCurrentDriveFolderId = Object.prototype.hasOwnProperty.call(input, "currentDriveFolderId");
-  const shouldUpdateStatus = Object.prototype.hasOwnProperty.call(input, "status");
-  const shouldUpdateTargetFolderKey = Object.prototype.hasOwnProperty.call(input, "targetFolderKey");
-  const shouldUpdateDocumentType = Object.prototype.hasOwnProperty.call(input, "documentType");
-  const shouldUpdateVendorOrParty = Object.prototype.hasOwnProperty.call(input, "vendorOrParty");
-  const shouldUpdateDocumentDate = Object.prototype.hasOwnProperty.call(input, "documentDate");
-  const shouldUpdateAmount = Object.prototype.hasOwnProperty.call(input, "amount");
-  const shouldUpdateCurrency = Object.prototype.hasOwnProperty.call(input, "currency");
-  const shouldUpdateInvoiceNumber = Object.prototype.hasOwnProperty.call(input, "invoiceNumber");
-  const shouldUpdateDueDate = Object.prototype.hasOwnProperty.call(input, "dueDate");
-  const shouldUpdateFailureReason = Object.prototype.hasOwnProperty.call(input, "failureReason");
+  const shouldUpdateJobId = Object.prototype.hasOwnProperty.call(
+    input,
+    "jobId",
+  );
+  const shouldUpdateCaptureContext = Object.prototype.hasOwnProperty.call(
+    input,
+    "captureContext",
+  );
+  const shouldUpdateCurrentDriveFolderId = Object.prototype.hasOwnProperty.call(
+    input,
+    "currentDriveFolderId",
+  );
+  const shouldUpdateStatus = Object.prototype.hasOwnProperty.call(
+    input,
+    "status",
+  );
+  const shouldUpdateTargetFolderKey = Object.prototype.hasOwnProperty.call(
+    input,
+    "targetFolderKey",
+  );
+  const shouldUpdateDocumentType = Object.prototype.hasOwnProperty.call(
+    input,
+    "documentType",
+  );
+  const shouldUpdateVendorOrParty = Object.prototype.hasOwnProperty.call(
+    input,
+    "vendorOrParty",
+  );
+  const shouldUpdateDocumentDate = Object.prototype.hasOwnProperty.call(
+    input,
+    "documentDate",
+  );
+  const shouldUpdateAmount = Object.prototype.hasOwnProperty.call(
+    input,
+    "amount",
+  );
+  const shouldUpdateCurrency = Object.prototype.hasOwnProperty.call(
+    input,
+    "currency",
+  );
+  const shouldUpdateInvoiceNumber = Object.prototype.hasOwnProperty.call(
+    input,
+    "invoiceNumber",
+  );
+  const shouldUpdateDueDate = Object.prototype.hasOwnProperty.call(
+    input,
+    "dueDate",
+  );
+  const shouldUpdateFailureReason = Object.prototype.hasOwnProperty.call(
+    input,
+    "failureReason",
+  );
 
   const rows = await db<DocumentRow[]>`
     update documents

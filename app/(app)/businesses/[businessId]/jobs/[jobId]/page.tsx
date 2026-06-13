@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobStatusControl } from "@/components/business/job-status-control";
 import { JobUploadForm } from "@/components/business/job-upload-form";
+import { JobUploadList } from "@/components/business/job-upload-list";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
@@ -29,7 +30,7 @@ export default async function JobDetailsPage({
     notFound();
   }
 
-  const { job, membership } = result;
+  const { job, membership, documents } = result;
   const canManageJob = membership.role === "owner_admin";
 
   return (
@@ -101,6 +102,11 @@ export default async function JobDetailsPage({
           See Docs
         </Link>
       </div>
+      <JobUploadList
+        businessId={businessId}
+        documents={documents}
+        jobId={jobId}
+      />
     </div>
   );
 }
