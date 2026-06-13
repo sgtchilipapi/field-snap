@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobStatusControl } from "@/components/business/job-status-control";
+import { JobUploadForm } from "@/components/business/job-upload-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
@@ -89,12 +90,7 @@ export default async function JobDetailsPage({
       </details>
       <div className="flex flex-wrap gap-3">
         {job.status === "active" ? (
-          <Link
-            className="inline-flex rounded-full bg-[color:var(--foreground)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-            href={`/businesses/${businessId}/jobs/${jobId}/snap`}
-          >
-            Snap
-          </Link>
+          <JobUploadForm businessId={businessId} jobId={jobId} />
         ) : null}
         <Link
           className="inline-flex rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
@@ -105,6 +101,36 @@ export default async function JobDetailsPage({
           See Docs
         </Link>
       </div>
+      <dl className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
+          <dt className="text-sm text-[color:var(--muted)]">Category</dt>
+          <dd className="mt-2 text-lg font-semibold">{job.category_name}</dd>
+        </div>
+        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
+          <dt className="text-sm text-[color:var(--muted)]">Status</dt>
+          <dd>
+            {canManageJob ? (
+              <JobStatusControl
+                businessId={businessId}
+                currentStatus={job.status}
+                jobId={jobId}
+              />
+            ) : (
+              <p className="mt-2 text-lg font-semibold">{job.status}</p>
+            )}
+          </dd>
+        </div>
+        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
+          <dt className="text-sm text-[color:var(--muted)]">Job date</dt>
+          <dd className="mt-2 text-lg font-semibold">{job.job_date}</dd>
+        </div>
+        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
+          <dt className="text-sm text-[color:var(--muted)]">Address</dt>
+          <dd className="mt-2 text-lg font-semibold">
+            {job.address ?? "Not provided"}
+          </dd>
+        </div>
+      </dl>
     </div>
   );
 }
