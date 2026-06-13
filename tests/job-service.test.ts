@@ -25,6 +25,16 @@ vi.mock("@/lib/server/data/job-folders", () => ({
   listJobFolders: vi.fn(),
 }));
 
+vi.mock("@/lib/server/data/document-processing-jobs", () => ({
+  enqueueDocumentProcessingJob: vi.fn(),
+}));
+
+vi.mock("@/lib/server/data/documents", () => ({
+  getDocumentForBusiness: vi.fn(),
+  listDocumentsForJob: vi.fn(),
+  updateDocumentProcessingState: vi.fn(),
+}));
+
 vi.mock("@/lib/server/data/jobs", () => ({
   archiveJob: vi.fn(),
   createJob: vi.fn(),
@@ -60,6 +70,7 @@ import {
 } from "@/lib/server/data/categories";
 import { recordAuditEvent } from "@/lib/server/audit/logs";
 import { getDriveConnectionForBusiness } from "@/lib/server/data/drive-connections";
+import { listDocumentsForJob } from "@/lib/server/data/documents";
 import { createJobFolder } from "@/lib/server/data/job-folders";
 import {
   archiveJob,
@@ -96,6 +107,7 @@ const mockedUpsertCategory = vi.mocked(upsertCategory);
 const mockedGetDriveConnectionForBusiness = vi.mocked(
   getDriveConnectionForBusiness,
 );
+const mockedListDocumentsForJob = vi.mocked(listDocumentsForJob);
 const mockedCreateJobFolder = vi.mocked(createJobFolder);
 const mockedArchiveJob = vi.mocked(archiveJob);
 const mockedCreateJob = vi.mocked(createJob);
@@ -116,6 +128,8 @@ const categoryId = "11111111-1111-1111-8111-111111111111";
 describe("job-service", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+
+    mockedListDocumentsForJob.mockResolvedValue([]);
 
     mockedAuthorizeBusinessAccess.mockResolvedValue({
       allowed: true,
