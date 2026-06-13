@@ -1,4 +1,5 @@
 import { AUDIT_ACTIONS, recordAuditEvent } from "@/lib/server/audit/logs";
+import { AuthFlowError } from "@/lib/server/auth/errors";
 import { createDocument } from "@/lib/server/data/documents";
 import { enqueueDocumentProcessingJob } from "@/lib/server/data/document-processing-jobs";
 import { getDriveConnectionForBusiness } from "@/lib/server/data/drive-connections";
@@ -22,6 +23,7 @@ export class DocumentUploadError extends Error {
       | "invalid_file"
       | "file_too_large"
       | "drive_unavailable"
+      | "upload_failed"
   ) {
     super(message);
   }
@@ -127,7 +129,17 @@ export async function uploadJobDocument(input: {
       jobId: input.jobId
     });
 
-    throw error;
+    if (error instanceof AuthFlowError && error.code === "access_denied") {
+      throw new DocumentUploadError(
+        "Google Drive needs to be reconnected before you can upload documents.",
+        "drive_unavailable"
+      );
+    }
+
+    throw new DocumentUploadError(
+      "Fylerr could not upload this document to Google Drive. Try again.",
+      "upload_failed"
+    );
   }
 
   const document = await createDocument({
@@ -229,7 +241,17 @@ export async function uploadGeneralDocument(input: {
       captureContext: "general"
     });
 
-    throw error;
+    if (error instanceof AuthFlowError && error.code === "access_denied") {
+      throw new DocumentUploadError(
+        "Google Drive needs to be reconnected before you can upload documents.",
+        "drive_unavailable"
+      );
+    }
+
+    throw new DocumentUploadError(
+      "Fylerr could not upload this document to Google Drive. Try again.",
+      "upload_failed"
+    );
   }
 
   const document = await createDocument({

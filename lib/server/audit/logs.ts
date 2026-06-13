@@ -4,6 +4,7 @@ import type { AuditLogRow } from "@/lib/server/db/schema";
 export const AUDIT_ACTIONS = {
   businessCreated: "business.created",
   driveConnected: "drive.connected",
+  driveDisconnected: "drive.disconnected",
   jobCreated: "job.created",
   documentUploaded: "document.uploaded",
   documentAiClassified: "document.ai_classified",

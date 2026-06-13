@@ -4,6 +4,7 @@ import {
 } from "@/lib/server/data/businesses";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import {
+  disconnectDriveConnectionForBusiness,
   getDriveConnectionForBusiness,
   upsertDriveConnection
 } from "@/lib/server/data/drive-connections";
@@ -180,4 +181,59 @@ export async function connectBusinessDriveFromCode(input: {
 
     throw error;
   }
+}
+
+export async function disconnectBusinessDrive(input: {
+  businessId: string;
+  disconnectedByUserId: string;
+}) {
+  const authorization = await authorizeBusinessAccess({
+    businessId: input.businessId,
+    userId: input.disconnectedByUserId,
+    capability: "drive:manage"
+  });
+
+  if (!authorization.allowed) {
+    return null;
+  }
+
+  const existingConnection = await getDriveConnectionForBusiness(input.businessId);
+
+  if (!existingConnection) {
+    return {
+      disconnected: false,
+      rootFolderId: authorization.details.business.drive_root_folder_id
+    };
+  }
+
+  await disconnectDriveConnectionForBusiness(input.businessId);
+
+  await recordAuditEvent({
+    businessId: input.businessId,
+    actorUserId: input.disconnectedByUserId,
+    entityType: "business",
+    entityId: input.businessId,
+    action: AUDIT_ACTIONS.driveDisconnected,
+    oldValue: {
+      google_account_email: existingConnection.google_account_email,
+      root_folder_id: authorization.details.business.drive_root_folder_id,
+      connection_status: existingConnection.status
+    },
+    newValue: {
+      google_account_email: existingConnection.google_account_email,
+      root_folder_id: authorization.details.business.drive_root_folder_id,
+      connection_status: "revoked"
+    }
+  });
+
+  logInfo("Drive disconnected", {
+    businessId: input.businessId,
+    userId: input.disconnectedByUserId,
+    rootFolderId: authorization.details.business.drive_root_folder_id
+  });
+
+  return {
+    disconnected: true,
+    rootFolderId: authorization.details.business.drive_root_folder_id
+  };
 }

@@ -49,6 +49,7 @@ import {
 } from "@/lib/server/data/drive-connections";
 import { getGeneralFoldersForBusiness } from "@/lib/server/data/general-folders";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
+import { AuthFlowError } from "@/lib/server/auth/errors";
 import { uploadGoogleDriveFile } from "@/lib/server/integrations/google/drive";
 import { decryptSecret } from "@/lib/server/security/encryption";
 import { getJobDetailsForUser } from "@/lib/server/services/job-service";
@@ -276,6 +277,50 @@ describe("document-upload-service", () => {
     } satisfies Partial<DocumentUploadError>);
 
     expect(mockedUploadGoogleDriveFile).not.toHaveBeenCalled();
+  });
+
+  it("maps revoked Google Drive credentials to a reconnectable upload error", async () => {
+    mockedUploadGoogleDriveFile.mockRejectedValue(
+      new AuthFlowError("access_denied", "Google Drive file upload failed: 401 Unauthorized")
+    );
+
+    await expect(
+      uploadJobDocument({
+        businessId: "business-1",
+        jobId: "job-1",
+        userId: "user-1",
+        file: createImageFile({
+          name: "receipt.jpg",
+          type: "image/jpeg",
+          contents: "image-bytes"
+        })
+      })
+    ).rejects.toMatchObject({
+      code: "drive_unavailable",
+      message: "Google Drive needs to be reconnected before you can upload documents."
+    } satisfies Partial<DocumentUploadError>);
+
+    expect(mockedUpdateDriveConnectionStatus).toHaveBeenCalledWith("business-1", "revoked");
+  });
+
+  it("maps unexpected Drive upload failures to a retryable upload error", async () => {
+    mockedUploadGoogleDriveFile.mockRejectedValue(new Error("socket hang up"));
+
+    await expect(
+      uploadJobDocument({
+        businessId: "business-1",
+        jobId: "job-1",
+        userId: "user-1",
+        file: createImageFile({
+          name: "receipt.jpg",
+          type: "image/jpeg",
+          contents: "image-bytes"
+        })
+      })
+    ).rejects.toMatchObject({
+      code: "upload_failed",
+      message: "Fylerr could not upload this document to Google Drive. Try again."
+    } satisfies Partial<DocumentUploadError>);
   });
 
   it("uploads a general business document into the general in-process folder and enqueues processing", async () => {

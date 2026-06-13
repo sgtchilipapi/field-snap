@@ -101,36 +101,6 @@ export default async function JobDetailsPage({
           See Docs
         </Link>
       </div>
-      <dl className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
-          <dt className="text-sm text-[color:var(--muted)]">Category</dt>
-          <dd className="mt-2 text-lg font-semibold">{job.category_name}</dd>
-        </div>
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
-          <dt className="text-sm text-[color:var(--muted)]">Status</dt>
-          <dd>
-            {canManageJob ? (
-              <JobStatusControl
-                businessId={businessId}
-                currentStatus={job.status}
-                jobId={jobId}
-              />
-            ) : (
-              <p className="mt-2 text-lg font-semibold">{job.status}</p>
-            )}
-          </dd>
-        </div>
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
-          <dt className="text-sm text-[color:var(--muted)]">Job date</dt>
-          <dd className="mt-2 text-lg font-semibold">{job.job_date}</dd>
-        </div>
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
-          <dt className="text-sm text-[color:var(--muted)]">Address</dt>
-          <dd className="mt-2 text-lg font-semibold">
-            {job.address ?? "Not provided"}
-          </dd>
-        </div>
-      </dl>
     </div>
   );
 }

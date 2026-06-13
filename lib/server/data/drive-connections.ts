@@ -115,3 +115,28 @@ export async function updateDriveConnectionStatus(
 
   return rows[0] ? mapDriveConnection(rows[0]) : null;
 }
+
+export async function disconnectDriveConnectionForBusiness(businessId: string) {
+  const rows = await db<DriveConnectionRow[]>`
+    update drive_connections
+    set
+      access_token_encrypted = null,
+      refresh_token_encrypted = null,
+      status = 'revoked',
+      updated_at = now()
+    where business_id = ${businessId}
+    returning
+      id,
+      business_id,
+      connected_by_user_id,
+      google_account_email,
+      access_token_encrypted,
+      refresh_token_encrypted,
+      scopes,
+      status,
+      created_at,
+      updated_at
+  `;
+
+  return rows[0] ? mapDriveConnection(rows[0]) : null;
+}

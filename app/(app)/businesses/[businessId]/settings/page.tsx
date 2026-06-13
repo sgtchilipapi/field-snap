@@ -24,7 +24,7 @@ export default async function BusinessSettingsPage({
   const session = await requireSession();
   const { businessId } = await params;
   const [
-    { folders, folders_error: foldersError },
+    { drive, folders, folders_error: foldersError },
     details,
     driveStatus
   ] = await Promise.all([
@@ -61,6 +61,7 @@ export default async function BusinessSettingsPage({
     : [];
   const needsReconnect =
     driveStatus.connectionStatus === "error" || driveStatus.connectionStatus === "revoked";
+  const hasDriveConnection = driveStatus.connectionStatus !== "not_connected";
   return (
     <div className="space-y-8">
       <div>
@@ -76,6 +77,19 @@ export default async function BusinessSettingsPage({
         title={details.business.name}
       // description="Connect the owner's Google Drive for this business and confirm the root folder Fylerr will manage."
       />
+      {driveStatus.connectionStatus === "active" && drive === "connected" ? (
+        <InlineAlert
+          title="Drive connected"
+          description="Fylerr is connected to Google Drive for this business."
+          variant="success"
+        />
+      ) : drive === "disconnected" ? (
+        <InlineAlert
+          title="Drive disconnected"
+          description="Google Drive has been disconnected for this business."
+          variant="success"
+        />
+      ) : null}
       {/* <InlineAlert title={driveAlert.title} description={driveAlert.description} variant={driveAlert.variant} /> */}
       {foldersError ? (
         <InlineAlert
@@ -96,18 +110,30 @@ export default async function BusinessSettingsPage({
             <div>
               <h2 className="text-lg font-semibold">{ driveConnected
                 ? needsReconnect
-                  ? "To continue, refresh the connection to your Google Drive."
+                  ? "To continue, reconnect Google Drive for this business."
                   : "Drive is connected successfully."
                 : "To start, connect your Google Drive."}</h2>
 
             </div>
-            <form action={`/api/businesses/${businessId}/drive/connect`} method="post" className="space-x-2">
-              <button
-                className={`rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90 ${driveConnected ? "hidden" : ""}`}
-                type="submit"
-              >
-                {driveConnected ? needsReconnect ? "Refresh Connection" : "Connected" : "Connect"}
-              </button>
+            <div className="flex flex-wrap gap-2">
+              <form action={`/api/businesses/${businessId}/drive/connect`} method="post">
+                <button
+                  className="rounded-full bg-[color:var(--foreground)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90"
+                  type="submit"
+                >
+                  Connect
+                </button>
+              </form>
+              {hasDriveConnection ? (
+                <form action={`/api/businesses/${businessId}/drive/disconnect`} method="post">
+                  <button
+                    className="rounded-full border border-[color:var(--border)] bg-white px-5 py-3 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
+                    type="submit"
+                  >
+                    Disconnect
+                  </button>
+                </form>
+              ) : null}
               {driveStatus.driveOpenUrl ? (
                 <Link
                   className="inline-flex rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
@@ -118,7 +144,7 @@ export default async function BusinessSettingsPage({
                   See Drive Folder
                 </Link>
               ) : null}
-            </form>
+            </div>
 
           </div>
           {/* {driveConnected ? (

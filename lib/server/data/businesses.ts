@@ -79,10 +79,14 @@ export async function getBusinessesForUser(
       b.name as "name",
       bm.role as "role",
       bm.status as "status",
-      (b.drive_root_folder_id is not null) as "driveConnected",
+      (dc.business_id is not null) as "driveConnected",
       bm.last_opened_at as "lastOpenedAt"
     from business_memberships bm
     inner join businesses b on b.id = bm.business_id
+    left join drive_connections dc
+      on dc.business_id = b.id
+      and dc.status = 'active'
+      and dc.access_token_encrypted is not null
     where bm.user_id = ${userId}
     order by bm.last_opened_at desc nulls last, b.name asc
   `;
@@ -228,10 +232,14 @@ export async function getMostRecentlyOpenedBusinessForUser(
       b.name as "name",
       bm.role as "role",
       bm.status as "status",
-      (b.drive_root_folder_id is not null) as "driveConnected",
+      (dc.business_id is not null) as "driveConnected",
       bm.last_opened_at as "lastOpenedAt"
     from business_memberships bm
     inner join businesses b on b.id = bm.business_id
+    left join drive_connections dc
+      on dc.business_id = b.id
+      and dc.status = 'active'
+      and dc.access_token_encrypted is not null
     where bm.user_id = ${userId}
       and bm.status = 'active'
     order by bm.last_opened_at desc nulls last, b.created_at desc
