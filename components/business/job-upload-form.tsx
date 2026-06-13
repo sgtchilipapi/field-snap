@@ -12,6 +12,9 @@ type FailureDialogState = {
 };
 
 const MAX_UPLOAD_SIZE_BYTES = 15 * 1024 * 1024;
+const SNAP_FILE_ACCEPT = "image/*,.heic,.heif";
+const UPLOAD_FILE_ACCEPT =
+  "image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif";
 
 function getMethodLabel(method: UploadMethod | null) {
   return method === "snap" ? "Snap Another" : "Upload Another";
@@ -467,7 +470,7 @@ export function JobUploadForm({
 
       <input
         ref={snapInputRef}
-        accept="image/*,.heic,.heif"
+        accept={SNAP_FILE_ACCEPT}
         capture="environment"
         className="sr-only"
         onChange={(event) => onFileChange("snap", event)}
@@ -475,7 +478,7 @@ export function JobUploadForm({
       />
       <input
         ref={uploadInputRef}
-        accept="image/*,.heic,.heif"
+        accept={UPLOAD_FILE_ACCEPT}
         className="sr-only"
         onChange={(event) => onFileChange("upload", event)}
         type="file"
