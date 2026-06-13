@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 
-type UploadState = "idle" | "uploading" | "uploaded" | "failed";
 type UploadMethod = "snap" | "upload";
 type FailureDialogAction = "connect" | "retry";
 
@@ -15,7 +14,7 @@ type FailureDialogState = {
 const MAX_UPLOAD_SIZE_BYTES = 15 * 1024 * 1024;
 
 function getMethodLabel(method: UploadMethod | null) {
-  return method === "snap" ? "Another Snap" : "Upload Another";
+  return method === "snap" ? "Snap Another" : "Upload Another";
 }
 
 function normalizeUploadErrorMessage(error: unknown) {
@@ -40,7 +39,7 @@ function buildFailureDialogState(message: string): FailureDialogState {
     normalizedMessage.includes("google drive needs to be reconnected")
   ) {
     return {
-      title: "Reconnect Google Drive",
+      title: "Connection needed",
       description:
         "Google Drive is disconnected for this business. Reconnect it to continue uploading documents.",
       action: "connect",
@@ -82,10 +81,14 @@ function buildFailureDialogState(message: string): FailureDialogState {
     };
   }
 
-  if (normalizedMessage.includes("do not have access") || normalizedMessage === "forbidden") {
+  if (
+    normalizedMessage.includes("do not have access") ||
+    normalizedMessage === "forbidden"
+  ) {
     return {
       title: "Access denied",
-      description: "You don't have permission to upload documents for this business.",
+      description:
+        "You don't have permission to upload documents for this business.",
       action: "retry",
     };
   }
@@ -93,15 +96,20 @@ function buildFailureDialogState(message: string): FailureDialogState {
   if (normalizedMessage === "unauthorized") {
     return {
       title: "Session expired",
-      description: "Your session expired before the upload completed. Sign in again and try again.",
+      description:
+        "Your session expired before the upload completed. Sign in again and try again.",
       action: "retry",
     };
   }
 
-  if (normalizedMessage.includes("job not found") || normalizedMessage === "not found") {
+  if (
+    normalizedMessage.includes("job not found") ||
+    normalizedMessage === "not found"
+  ) {
     return {
       title: "Job unavailable",
-      description: "This job is no longer available for uploads. Refresh the page and try again.",
+      description:
+        "This job is no longer available for uploads. Refresh the page and try again.",
       action: "retry",
     };
   }
@@ -122,27 +130,28 @@ export function JobUploadForm({
   jobId: string;
   autoOpenSnap?: boolean;
 }) {
-  const [state, setState] = useState<UploadState>("idle");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [lastMethod, setLastMethod] = useState<UploadMethod | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [successDialogCountdown, setSuccessDialogCountdown] = useState(10);
-  const [failureDialog, setFailureDialog] = useState<FailureDialogState | null>(null);
+  const [successDialogCountdown, setSuccessDialogCountdown] = useState(5);
+  const [failureDialog, setFailureDialog] = useState<FailureDialogState | null>(
+    null,
+  );
   const [pendingUpload, setPendingUpload] = useState<{
     file: File;
     method: UploadMethod;
   } | null>(null);
   const [isConnectingDrive, setIsConnectingDrive] = useState(false);
-  const [driveConnectMessage, setDriveConnectMessage] = useState<string | null>(null);
+  const [driveConnectMessage, setDriveConnectMessage] = useState<string | null>(
+    null,
+  );
   const snapInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
-  const uploadingDialogRef = useRef<HTMLDivElement>(null);
   const failureDialogRef = useRef<HTMLDivElement>(null);
   const driveConnectWindowRef = useRef<Window | null>(null);
   const driveStatusPollRef = useRef<number | null>(null);
-  const isUploading = state === "uploading";
   const isFailureDialogOpen = failureDialog !== null;
-  const isAnyDialogOpen = isUploading || showSuccessDialog || isFailureDialogOpen;
+  const isAnyDialogOpen = showSuccessDialog || isFailureDialogOpen;
 
   useEffect(() => {
     if (autoOpenSnap) {
@@ -155,7 +164,7 @@ export function JobUploadForm({
       return;
     }
 
-    setSuccessDialogCountdown(10);
+    setSuccessDialogCountdown(5);
 
     const intervalId = window.setInterval(() => {
       setSuccessDialogCountdown((currentCountdown) => {
@@ -186,12 +195,6 @@ export function JobUploadForm({
   }, [isAnyDialogOpen]);
 
   useEffect(() => {
-    if (isUploading) {
-      uploadingDialogRef.current?.focus();
-    }
-  }, [isUploading]);
-
-  useEffect(() => {
     if (isFailureDialogOpen) {
       failureDialogRef.current?.focus();
     }
@@ -205,7 +208,10 @@ export function JobUploadForm({
 
       driveStatusPollRef.current = null;
 
-      if (driveConnectWindowRef.current && !driveConnectWindowRef.current.closed) {
+      if (
+        driveConnectWindowRef.current &&
+        !driveConnectWindowRef.current.closed
+      ) {
         driveConnectWindowRef.current.close();
       }
 
@@ -219,7 +225,11 @@ export function JobUploadForm({
       driveStatusPollRef.current = null;
     }
 
-    if (options?.closeWindow && driveConnectWindowRef.current && !driveConnectWindowRef.current.closed) {
+    if (
+      options?.closeWindow &&
+      driveConnectWindowRef.current &&
+      !driveConnectWindowRef.current.closed
+    ) {
       driveConnectWindowRef.current.close();
     }
 
@@ -228,9 +238,12 @@ export function JobUploadForm({
     }
   }
 
-  function openFailureDialog(message: string, method: UploadMethod, file: File) {
+  function openFailureDialog(
+    message: string,
+    method: UploadMethod,
+    file: File,
+  ) {
     clearDriveConnectFlow({ closeWindow: true });
-    setState("failed");
     setSuccessMessage(null);
     setShowSuccessDialog(false);
     setPendingUpload({ file, method });
@@ -245,14 +258,16 @@ export function JobUploadForm({
     setDriveConnectMessage(null);
     setIsConnectingDrive(false);
     setFailureDialog(null);
-    setState("idle");
   }
 
   async function checkDriveConnection(stopIfPopupClosed: boolean) {
     try {
-      const response = await fetch(`/api/businesses/${businessId}/drive/status`, {
-        cache: "no-store",
-      });
+      const response = await fetch(
+        `/api/businesses/${businessId}/drive/status`,
+        {
+          cache: "no-store",
+        },
+      );
       const payload = (await response.json().catch(() => null)) as {
         connected?: boolean;
       } | null;
@@ -262,7 +277,6 @@ export function JobUploadForm({
         setDriveConnectMessage(null);
         setIsConnectingDrive(false);
         setFailureDialog(null);
-        setState("idle");
         return;
       }
     } catch {
@@ -272,7 +286,9 @@ export function JobUploadForm({
     if (stopIfPopupClosed) {
       clearDriveConnectFlow();
       setIsConnectingDrive(false);
-      setDriveConnectMessage("Google Drive is still disconnected. Complete the connection flow and try again.");
+      setDriveConnectMessage(
+        "Google Drive is still disconnected. Complete the connection flow and try again.",
+      );
     }
   }
 
@@ -292,7 +308,9 @@ export function JobUploadForm({
     const popup = window.open("", popupName, "popup,width=640,height=760");
 
     if (!popup) {
-      setDriveConnectMessage("Allow pop-ups to reconnect Google Drive, then try again.");
+      setDriveConnectMessage(
+        "Allow pop-ups to reconnect Google Drive, then try again.",
+      );
       return;
     }
 
@@ -313,10 +331,6 @@ export function JobUploadForm({
   }
 
   function openPicker(method: UploadMethod) {
-    if (state === "uploading") {
-      return;
-    }
-
     if (method === "snap") {
       snapInputRef.current?.click();
       return;
@@ -326,24 +340,23 @@ export function JobUploadForm({
   }
 
   async function uploadFile(file: File, method: UploadMethod) {
-    if (state === "uploading") {
-      return;
-    }
-
     if (file.size === 0) {
       openFailureDialog("Select an image to upload.", method, file);
       return;
     }
 
     if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-      openFailureDialog("Image uploads must be 15 MB or smaller.", method, file);
+      openFailureDialog(
+        "Image uploads must be 15 MB or smaller.",
+        method,
+        file,
+      );
       return;
     }
 
     const formData = new FormData();
     formData.set("file", file);
     clearDriveConnectFlow({ closeWindow: true });
-    setState("uploading");
     setSuccessMessage(null);
     setFailureDialog(null);
     setShowSuccessDialog(false);
@@ -353,29 +366,52 @@ export function JobUploadForm({
     setIsConnectingDrive(false);
 
     try {
-      const response = await fetch(
-        `/api/businesses/${businessId}/jobs/${jobId}/documents/upload`,
+      const driveStatusResponse = await fetch(
+        `/api/businesses/${businessId}/drive/status`,
         {
-          method: "POST",
-          body: formData,
+          cache: "no-store",
         },
       );
-
-      const payload = (await response.json().catch(() => null)) as {
-        document_id?: string;
-        error?: string;
+      const driveStatus = (await driveStatusResponse
+        .json()
+        .catch(() => null)) as {
+        connected?: boolean;
       } | null;
 
-      if (!response.ok) {
-        throw new Error(payload?.error ?? "Upload failed.");
+      if (!driveStatusResponse.ok || !driveStatus?.connected) {
+        openFailureDialog(
+          "An active Google Drive connection is required.",
+          method,
+          file,
+        );
+        return;
       }
-
-      setState("uploaded");
-      setSuccessMessage("Uploaded. Classifying the document...");
-      setShowSuccessDialog(true);
     } catch (error) {
       openFailureDialog(normalizeUploadErrorMessage(error), method, file);
+      return;
     }
+
+    setSuccessMessage(
+      "Your photo is being uploaded in the background. You can keep working while Fylerr sends it to Google Drive.",
+    );
+    setShowSuccessDialog(true);
+
+    fetch(`/api/businesses/${businessId}/jobs/${jobId}/documents/upload`, {
+      method: "POST",
+      body: formData,
+    })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+
+        if (!response.ok) {
+          throw new Error(payload?.error ?? "Upload failed.");
+        }
+      })
+      .catch((error) => {
+        console.error("Background document upload failed", error);
+      });
   }
 
   function onFileChange(
@@ -415,7 +451,6 @@ export function JobUploadForm({
       <div className="flex flex-wrap gap-3">
         <button
           className="inline-flex rounded-full bg-[color:var(--foreground)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:hidden"
-          disabled={isUploading}
           onClick={() => openPicker("snap")}
           type="button"
         >
@@ -423,7 +458,6 @@ export function JobUploadForm({
         </button>
         <button
           className="inline-flex rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isUploading}
           onClick={() => openPicker("upload")}
           type="button"
         >
@@ -436,7 +470,6 @@ export function JobUploadForm({
         accept="image/*,.heic,.heif"
         capture="environment"
         className="sr-only"
-        disabled={isUploading}
         onChange={(event) => onFileChange("snap", event)}
         type="file"
       />
@@ -444,33 +477,9 @@ export function JobUploadForm({
         ref={uploadInputRef}
         accept="image/*,.heic,.heif"
         className="sr-only"
-        disabled={isUploading}
         onChange={(event) => onFileChange("upload", event)}
         type="file"
       />
-
-      {isUploading ? (
-        <div
-          aria-labelledby="job-upload-progress-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-          role="dialog"
-        >
-          <div
-            ref={uploadingDialogRef}
-            className="w-full max-w-sm rounded-[1.5rem] border border-[color:var(--border)] bg-white p-6 text-center shadow-xl outline-none"
-            tabIndex={-1}
-          >
-            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[color:var(--border)] border-t-[color:var(--accent)]" />
-            <h2
-              className="mt-5 text-lg font-semibold text-[color:var(--foreground)]"
-              id="job-upload-progress-title"
-            >
-              Uploading document. Please wait a moment...
-            </h2>
-          </div>
-        </div>
-      ) : null}
 
       {failureDialog ? (
         <div
@@ -503,7 +512,9 @@ export function JobUploadForm({
                 className="rounded-full bg-[color:var(--foreground)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isConnectingDrive}
                 onClick={
-                  failureDialog.action === "connect" ? connectGoogleDrive : retryUpload
+                  failureDialog.action === "connect"
+                    ? connectGoogleDrive
+                    : retryUpload
                 }
                 type="button"
               >
@@ -537,7 +548,7 @@ export function JobUploadForm({
               className="text-lg font-semibold text-[color:var(--foreground)]"
               id="job-upload-success-title"
             >
-              Upload received
+              Upload started
             </h2>
             <p className="mt-2 text-sm text-[color:var(--muted)]">
               {successMessage ?? "Classifying the document..."}
@@ -558,7 +569,7 @@ export function JobUploadForm({
                 onClick={() => setShowSuccessDialog(false)}
                 type="button"
               >
-                OK
+                Close
               </button>
             </div>
           </div>
