@@ -47,7 +47,7 @@ export default async function JobDetailsPage({
         title={`${job.client_name} - ${job.job_name}`}
         description=""
       />
-      <details className="group rounded-[1.5rem] bg-[color:var(--surface)] p-5">
+      <details className="group rounded-[1.5rem] bg-[color:var(--surface)] p-2">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-[color:var(--foreground)] [&::-webkit-details-marker]:hidden">
           <span>Job details</span>
           <span
