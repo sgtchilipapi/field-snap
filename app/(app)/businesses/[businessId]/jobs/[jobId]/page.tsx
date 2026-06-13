@@ -11,7 +11,7 @@ function getDriveOpenUrl(folderId: string) {
 }
 
 export default async function JobDetailsPage({
-  params
+  params,
 }: {
   params: Promise<{ businessId: string; jobId: string }>;
 }) {
@@ -20,7 +20,7 @@ export default async function JobDetailsPage({
   await requireBusinessPageAccess({
     businessId,
     userId: session.userId,
-    capability: "jobs:view"
+    capability: "jobs:view",
   });
   const result = await getJobDetailsForUser(businessId, jobId, session.userId);
 
@@ -46,6 +46,47 @@ export default async function JobDetailsPage({
         title={`${job.client_name} - ${job.job_name}`}
         description=""
       />
+      <details className="group rounded-[1.5rem] bg-[color:var(--surface)] p-5">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-[color:var(--foreground)] [&::-webkit-details-marker]:hidden">
+          <span>Job details</span>
+          <span
+            className="text-[color:var(--muted)] transition group-open:rotate-180"
+            aria-hidden="true"
+          >
+            ↓
+          </span>
+        </summary>
+        <dl className="mt-5 grid gap-5 md:grid-cols-2">
+          <div>
+            <dt className="text-sm text-[color:var(--muted)]">Category</dt>
+            <dd className="mt-2 text-lg font-semibold">{job.category_name}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-[color:var(--muted)]">Status</dt>
+            <dd>
+              {canManageJob ? (
+                <JobStatusControl
+                  businessId={businessId}
+                  currentStatus={job.status}
+                  jobId={jobId}
+                />
+              ) : (
+                <p className="mt-2 text-lg font-semibold">{job.status}</p>
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-sm text-[color:var(--muted)]">Job date</dt>
+            <dd className="mt-2 text-lg font-semibold">{job.job_date}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-[color:var(--muted)]">Address</dt>
+            <dd className="mt-2 text-lg font-semibold">
+              {job.address ?? "Not provided"}
+            </dd>
+          </div>
+        </dl>
+      </details>
       <div className="flex flex-wrap gap-3">
         {job.status === "active" ? (
           <Link
@@ -64,34 +105,6 @@ export default async function JobDetailsPage({
           See Docs
         </Link>
       </div>
-      <dl className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
-          <dt className="text-sm text-[color:var(--muted)]">Category</dt>
-          <dd className="mt-2 text-lg font-semibold">{job.category_name}</dd>
-        </div>
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
-          <dt className="text-sm text-[color:var(--muted)]">Status</dt>
-          <dd>
-            {canManageJob ? (
-              <JobStatusControl
-                businessId={businessId}
-                currentStatus={job.status}
-                jobId={jobId}
-              />
-            ) : (
-              <p className="mt-2 text-lg font-semibold">{job.status}</p>
-            )}
-          </dd>
-        </div>
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
-          <dt className="text-sm text-[color:var(--muted)]">Job date</dt>
-          <dd className="mt-2 text-lg font-semibold">{job.job_date}</dd>
-        </div>
-        <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
-          <dt className="text-sm text-[color:var(--muted)]">Address</dt>
-          <dd className="mt-2 text-lg font-semibold">{job.address ?? "Not provided"}</dd>
-        </div>
-      </dl>
     </div>
   );
 }
