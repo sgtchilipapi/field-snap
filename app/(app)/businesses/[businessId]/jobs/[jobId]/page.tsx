@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobStatusControl } from "@/components/business/job-status-control";
+import { JobUploadForm } from "@/components/business/job-upload-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
@@ -11,7 +12,7 @@ function getDriveOpenUrl(folderId: string) {
 }
 
 export default async function JobDetailsPage({
-  params
+  params,
 }: {
   params: Promise<{ businessId: string; jobId: string }>;
 }) {
@@ -20,7 +21,7 @@ export default async function JobDetailsPage({
   await requireBusinessPageAccess({
     businessId,
     userId: session.userId,
-    capability: "jobs:view"
+    capability: "jobs:view",
   });
   const result = await getJobDetailsForUser(businessId, jobId, session.userId);
 
@@ -46,14 +47,9 @@ export default async function JobDetailsPage({
         title={`${job.client_name} - ${job.job_name}`}
         description=""
       />
-      <div className="flex flex-wrap gap-3">
+      <div className="space-y-4">
         {job.status === "active" ? (
-          <Link
-            className="inline-flex rounded-full bg-[color:var(--foreground)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-            href={`/businesses/${businessId}/jobs/${jobId}/snap`}
-          >
-            Snap
-          </Link>
+          <JobUploadForm businessId={businessId} jobId={jobId} />
         ) : null}
         <Link
           className="inline-flex rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--foreground)] transition hover:border-[color:var(--foreground)]"
@@ -89,7 +85,9 @@ export default async function JobDetailsPage({
         </div>
         <div className="rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
           <dt className="text-sm text-[color:var(--muted)]">Address</dt>
-          <dd className="mt-2 text-lg font-semibold">{job.address ?? "Not provided"}</dd>
+          <dd className="mt-2 text-lg font-semibold">
+            {job.address ?? "Not provided"}
+          </dd>
         </div>
       </dl>
     </div>

@@ -1,7 +1,6 @@
 import { JobsWorkspace } from "@/components/business/jobs-workspace";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireBusinessPageAccess } from "@/lib/server/auth/business-authorization";
 import { requireSession } from "@/lib/server/auth/session";
@@ -10,7 +9,7 @@ import { listJobsForUser } from "@/lib/server/services/job-service";
 
 export default async function BusinessJobsPage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ businessId: string }>;
   searchParams: Promise<{
@@ -22,14 +21,18 @@ export default async function BusinessJobsPage({
   const session = await requireSession();
   const { businessId } = await params;
   const { status, category, search } = await searchParams;
-  const selectedStatus = status && ["active", "completed", "archived", "all"].includes(status) ? status : "active";
-  const selectedCategoryId = typeof category === "string" && category.trim().length > 0 ? category : "";
+  const selectedStatus =
+    status && ["active", "completed", "archived", "all"].includes(status)
+      ? status
+      : "active";
+  const selectedCategoryId =
+    typeof category === "string" && category.trim().length > 0 ? category : "";
   const searchQuery = typeof search === "string" ? search.trim() : "";
   const [details, categories, jobsResult] = await Promise.all([
     requireBusinessPageAccess({
       businessId,
       userId: session.userId,
-      capability: "jobs:view"
+      capability: "jobs:view",
     }),
     getCategoriesForBusiness(businessId),
     listJobsForUser({
@@ -37,8 +40,8 @@ export default async function BusinessJobsPage({
       userId: session.userId,
       status: selectedStatus,
       categoryId: selectedCategoryId || null,
-      search: searchQuery || null
-    })
+      search: searchQuery || null,
+    }),
   ]);
 
   if (!jobsResult) {
@@ -47,10 +50,7 @@ export default async function BusinessJobsPage({
 
   return (
     <div className="space-y-3">
-      <PageHeader
-        eyebrow="Jobs for"
-        title={details.business.name}
-      />
+      <PageHeader eyebrow="Jobs for" title={details.business.name} />
       <JobsWorkspace
         businessId={businessId}
         canCreateJob={details.membership.role === "owner_admin"}
