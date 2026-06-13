@@ -10,6 +10,10 @@ vi.mock("@/lib/server/auth/business-authorization", () => ({
   authorizeBusinessAccess: vi.fn()
 }));
 
+vi.mock("@/lib/server/data/users", () => ({
+  findUserById: vi.fn()
+}));
+
 vi.mock("@/lib/server/integrations/google/drive", () => ({
   buildGoogleDriveAuthorizationUrl: vi.fn()
 }));
@@ -21,12 +25,14 @@ import {
   getSession,
   setDriveOAuthState
 } from "@/lib/server/auth/session";
+import { findUserById } from "@/lib/server/data/users";
 import { buildGoogleDriveAuthorizationUrl } from "@/lib/server/integrations/google/drive";
 
 const mockedAuthorizeBusinessAccess = vi.mocked(authorizeBusinessAccess);
 const mockedCreateOAuthState = vi.mocked(createOAuthState);
 const mockedGetSession = vi.mocked(getSession);
 const mockedSetDriveOAuthState = vi.mocked(setDriveOAuthState);
+const mockedFindUserById = vi.mocked(findUserById);
 const mockedBuildGoogleDriveAuthorizationUrl = vi.mocked(buildGoogleDriveAuthorizationUrl);
 
 describe("/api/businesses/[businessId]/drive/connect", () => {
@@ -54,6 +60,15 @@ describe("/api/businesses/[businessId]/drive/connect", () => {
         }
       }
     });
+    mockedFindUserById.mockResolvedValue({
+      id: "user-1",
+      google_sub: "google-sub-1",
+      email: "owner@example.com",
+      name: "Owner",
+      avatar_url: null,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
     mockedCreateOAuthState.mockReturnValue("nonce-123");
     mockedBuildGoogleDriveAuthorizationUrl.mockReturnValue(
       "https://accounts.google.com/o/oauth2/v2/auth?state=nonce-123"
@@ -63,6 +78,10 @@ describe("/api/businesses/[businessId]/drive/connect", () => {
       params: Promise.resolve({ businessId: "business-1" })
     });
 
+    expect(mockedBuildGoogleDriveAuthorizationUrl).toHaveBeenCalledWith({
+      state: "nonce-123",
+      loginHint: "owner@example.com"
+    });
     expect(mockedSetDriveOAuthState).toHaveBeenCalledWith({
       businessId: "business-1",
       nonce: "nonce-123",

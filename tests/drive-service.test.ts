@@ -13,6 +13,10 @@ vi.mock("@/lib/server/audit/logs", () => ({
   recordAuditEvent: vi.fn()
 }));
 
+vi.mock("@/lib/server/data/users", () => ({
+  findUserById: vi.fn()
+}));
+
 vi.mock("@/lib/server/data/drive-connections", () => ({
   disconnectDriveConnectionForBusiness: vi.fn(),
   getDriveConnectionForBusiness: vi.fn(),
@@ -42,6 +46,7 @@ import {
   getBusinessForUser,
   updateBusinessDriveRootFolder
 } from "@/lib/server/data/businesses";
+import { findUserById } from "@/lib/server/data/users";
 import {
   disconnectDriveConnectionForBusiness,
   getDriveConnectionForBusiness,
@@ -60,6 +65,7 @@ const mockedRecordAuditEvent = vi.mocked(recordAuditEvent);
 const mockedDisconnectDriveConnectionForBusiness = vi.mocked(
   disconnectDriveConnectionForBusiness
 );
+const mockedFindUserById = vi.mocked(findUserById);
 const mockedGetDriveConnectionForBusiness = vi.mocked(getDriveConnectionForBusiness);
 const mockedUpsertDriveConnection = vi.mocked(upsertDriveConnection);
 const mockedCreateGoogleDriveFolder = vi.mocked(createGoogleDriveFolder);
@@ -140,6 +146,15 @@ describe("drive-service", () => {
       scopes: ["https://www.googleapis.com/auth/drive.file"]
     });
     mockedFetchGoogleDriveAccountEmail.mockResolvedValue("owner@example.com");
+    mockedFindUserById.mockResolvedValue({
+      id: "user-1",
+      google_sub: "google-sub-1",
+      email: "owner@example.com",
+      name: "Owner",
+      avatar_url: null,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
     mockedCreateGoogleDriveFolder.mockResolvedValue({
       id: "folder-123",
       name: "Fylerr - ABC Landscaping"
@@ -176,6 +191,52 @@ describe("drive-service", () => {
         action: "drive.connected"
       })
     );
+  });
+
+
+  it("rejects Drive connection when Google grants a different account", async () => {
+    mockedGetBusinessForUser.mockResolvedValue({
+      business: {
+        id: "business-1",
+        name: "ABC Landscaping",
+        owner_user_id: "user-1",
+        drive_root_folder_id: null,
+        general_docs_folder_id: null,
+        created_at: new Date(),
+        updated_at: new Date()
+      },
+      membership: {
+        role: "owner_admin",
+        status: "active"
+      }
+    });
+    mockedGetDriveConnectionForBusiness.mockResolvedValue(null);
+    mockedExchangeCodeForGoogleDriveTokens.mockResolvedValue({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      scopes: ["https://www.googleapis.com/auth/drive.file"]
+    });
+    mockedFetchGoogleDriveAccountEmail.mockResolvedValue("other@example.com");
+    mockedFindUserById.mockResolvedValue({
+      id: "user-1",
+      google_sub: "google-sub-1",
+      email: "owner@example.com",
+      name: "Owner",
+      avatar_url: null,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+
+    await expect(
+      connectBusinessDriveFromCode({
+        businessId: "business-1",
+        connectedByUserId: "user-1",
+        code: "oauth-code"
+      })
+    ).rejects.toThrow("same Google account used to sign in");
+
+    expect(mockedCreateGoogleDriveFolder).not.toHaveBeenCalled();
+    expect(mockedUpsertDriveConnection).not.toHaveBeenCalled();
   });
 
   it("disconnects an active Drive connection for an owner-admin", async () => {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import { getSession, createOAuthState, setDriveOAuthState } from "@/lib/server/auth/session";
+import { findUserById } from "@/lib/server/data/users";
 import { buildGoogleDriveAuthorizationUrl } from "@/lib/server/integrations/google/drive";
 import { getRequestContext, logInfo } from "@/lib/server/logger";
 
@@ -37,6 +38,12 @@ export async function POST(
     return forbidden();
   }
 
+  const user = await findUserById(session.userId);
+
+  if (!user) {
+    return unauthorized();
+  }
+
   const nonce = createOAuthState();
 
   await setDriveOAuthState({
@@ -49,7 +56,8 @@ export async function POST(
 
   return NextResponse.redirect(
     buildGoogleDriveAuthorizationUrl({
-      state: nonce
+      state: nonce,
+      loginHint: user.email
     })
   );
 }

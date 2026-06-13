@@ -4,6 +4,10 @@ vi.mock("@/lib/server/auth/session", () => ({
   getSession: vi.fn()
 }));
 
+vi.mock("@/lib/server/data/users", () => ({
+  findUserById: vi.fn()
+}));
+
 vi.mock("@/lib/server/integrations/google/oauth", () => ({
   buildGoogleAuthorizationUrl: vi.fn()
 }));
@@ -15,6 +19,7 @@ vi.mock("@/lib/server/integrations/google/drive", () => ({
 
 import { GET } from "@/app/api/debug/google-oauth/route";
 import { getSession } from "@/lib/server/auth/session";
+import { findUserById } from "@/lib/server/data/users";
 import { buildGoogleAuthorizationUrl } from "@/lib/server/integrations/google/oauth";
 import {
   buildGoogleDriveAuthorizationUrl,
@@ -22,6 +27,7 @@ import {
 } from "@/lib/server/integrations/google/drive";
 
 const mockedGetSession = vi.mocked(getSession);
+const mockedFindUserById = vi.mocked(findUserById);
 const mockedBuildGoogleAuthorizationUrl = vi.mocked(buildGoogleAuthorizationUrl);
 const mockedBuildGoogleDriveAuthorizationUrl = vi.mocked(buildGoogleDriveAuthorizationUrl);
 const mockedGetGoogleDriveCallbackUrl = vi.mocked(getGoogleDriveCallbackUrl);
@@ -33,11 +39,20 @@ describe("/api/debug/google-oauth", () => {
 
   it("returns the active OAuth client and redirect URIs for an authenticated user", async () => {
     mockedGetSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
+    mockedFindUserById.mockResolvedValue({
+      id: "user-1",
+      google_sub: "google-sub-1",
+      email: "owner@example.com",
+      name: "Owner",
+      avatar_url: null,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
     mockedBuildGoogleAuthorizationUrl.mockReturnValue(
       "https://accounts.google.com/o/oauth2/v2/auth?client_id=client-id&redirect_uri=https%3A%2F%2Ffs.celeris.pro%2Fauth%2Fgoogle%2Fcallback&scope=openid%20email%20profile&access_type=offline&prompt=select_account&state=debug-login-state"
     );
     mockedBuildGoogleDriveAuthorizationUrl.mockReturnValue(
-      "https://accounts.google.com/o/oauth2/v2/auth?client_id=client-id&redirect_uri=https%3A%2F%2Ffs.celeris.pro%2Fauth%2Fgoogle%2Fdrive%2Fcallback&scope=openid%20email%20profile%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.file&access_type=offline&prompt=consent%20select_account&state=debug-drive-state"
+      "https://accounts.google.com/o/oauth2/v2/auth?client_id=client-id&redirect_uri=https%3A%2F%2Ffs.celeris.pro%2Fauth%2Fgoogle%2Fdrive%2Fcallback&scope=openid%20email%20profile%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.file&access_type=offline&prompt=consent&login_hint=owner%40example.com&state=debug-drive-state"
     );
     mockedGetGoogleDriveCallbackUrl.mockReturnValue(
       "https://fs.celeris.pro/auth/google/drive/callback"
@@ -73,6 +88,15 @@ describe("/api/debug/google-oauth", () => {
 
   it("returns a 500 when OAuth config inspection fails", async () => {
     mockedGetSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
+    mockedFindUserById.mockResolvedValue({
+      id: "user-1",
+      google_sub: "google-sub-1",
+      email: "owner@example.com",
+      name: "Owner",
+      avatar_url: null,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
     mockedBuildGoogleAuthorizationUrl.mockImplementation(() => {
       throw new Error("bad oauth config");
     });
