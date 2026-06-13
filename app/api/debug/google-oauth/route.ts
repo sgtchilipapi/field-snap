@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/server/auth/session";
+import { findUserById } from "@/lib/server/data/users";
 import { env } from "@/lib/server/env";
 import { buildGoogleAuthorizationUrl } from "@/lib/server/integrations/google/oauth";
 import {
@@ -21,7 +22,8 @@ function parseAuthorizationUrl(url: string) {
     redirect_uri: parsed.searchParams.get("redirect_uri"),
     scope: parsed.searchParams.get("scope"),
     access_type: parsed.searchParams.get("access_type"),
-    prompt: parsed.searchParams.get("prompt")
+    prompt: parsed.searchParams.get("prompt"),
+    login_hint: parsed.searchParams.get("login_hint")
   };
 }
 
@@ -33,9 +35,15 @@ export async function GET() {
   }
 
   try {
+    const user = await findUserById(session.userId);
+
+    if (!user) {
+      return unauthorized();
+    }
+
     const loginOAuth = parseAuthorizationUrl(buildGoogleAuthorizationUrl("debug-login-state"));
     const driveOAuth = parseAuthorizationUrl(
-      buildGoogleDriveAuthorizationUrl({ state: "debug-drive-state" })
+      buildGoogleDriveAuthorizationUrl({ state: "debug-drive-state", loginHint: user.email })
     );
 
     return NextResponse.json({

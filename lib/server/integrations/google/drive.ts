@@ -57,7 +57,7 @@ async function parseJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function buildGoogleDriveAuthorizationUrl(input: { state: string }) {
+export function buildGoogleDriveAuthorizationUrl(input: { state: string; loginHint: string }) {
   const url = new URL(GOOGLE_AUTHORIZATION_URL);
 
   url.searchParams.set("client_id", env.GOOGLE_CLIENT_ID);
@@ -66,7 +66,8 @@ export function buildGoogleDriveAuthorizationUrl(input: { state: string }) {
   url.searchParams.set("scope", `openid email profile ${GOOGLE_DRIVE_SCOPE}`);
   url.searchParams.set("access_type", "offline");
   url.searchParams.set("include_granted_scopes", "true");
-  url.searchParams.set("prompt", "consent select_account");
+  url.searchParams.set("prompt", "consent");
+  url.searchParams.set("login_hint", input.loginHint);
   url.searchParams.set("state", input.state);
 
   return url.toString();

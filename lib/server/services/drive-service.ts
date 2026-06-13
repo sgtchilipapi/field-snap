@@ -2,12 +2,14 @@ import { AUDIT_ACTIONS, recordAuditEvent } from "@/lib/server/audit/logs";
 import {
   updateBusinessDriveRootFolder
 } from "@/lib/server/data/businesses";
+import { AuthFlowError } from "@/lib/server/auth/errors";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import {
   disconnectDriveConnectionForBusiness,
   getDriveConnectionForBusiness,
   upsertDriveConnection
 } from "@/lib/server/data/drive-connections";
+import { findUserById } from "@/lib/server/data/users";
 import {
   createGoogleDriveFolder,
   exchangeCodeForGoogleDriveTokens,
@@ -132,6 +134,15 @@ export async function connectBusinessDriveFromCode(input: {
       code: input.code
     });
     const googleAccountEmail = await fetchGoogleDriveAccountEmail(tokens.accessToken);
+    const connectedByUser = await findUserById(input.connectedByUserId);
+
+    if (!connectedByUser || googleAccountEmail.toLowerCase() !== connectedByUser.email.toLowerCase()) {
+      throw new AuthFlowError(
+        "access_denied",
+        "Google Drive must be connected with the same Google account used to sign in."
+      );
+    }
+
     const rootFolderId = await ensureBusinessRootFolder({
       businessId: input.businessId,
       businessName: details.business.name,
