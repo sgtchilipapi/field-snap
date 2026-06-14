@@ -18,7 +18,7 @@ vi.mock("@/lib/server/integrations/google/drive", () => ({
   buildGoogleDriveAuthorizationUrl: vi.fn()
 }));
 
-import { POST } from "@/app/api/businesses/[businessId]/drive/connect/route";
+import { GET, POST } from "@/app/api/businesses/[businessId]/drive/connect/route";
 import { authorizeBusinessAccess } from "@/lib/server/auth/business-authorization";
 import {
   createOAuthState,
@@ -87,6 +87,50 @@ describe("/api/businesses/[businessId]/drive/connect", () => {
       nonce: "nonce-123",
       userId: "user-1"
     });
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://accounts.google.com/o/oauth2/v2/auth?state=nonce-123"
+    );
+  });
+
+  it("starts Drive OAuth from a redirected business creation GET", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "user-1", issuedAt: 1 });
+    mockedAuthorizeBusinessAccess.mockResolvedValue({
+      allowed: true,
+      details: {
+        business: {
+          id: "business-1",
+          name: "ABC Landscaping",
+          owner_user_id: "user-1",
+          drive_root_folder_id: null,
+          general_docs_folder_id: null,
+          created_at: new Date(),
+          updated_at: new Date()
+        },
+        membership: {
+          role: "owner_admin",
+          status: "active"
+        }
+      }
+    });
+    mockedFindUserById.mockResolvedValue({
+      id: "user-1",
+      google_sub: "google-sub-1",
+      email: "owner@example.com",
+      name: "Owner",
+      avatar_url: null,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+    mockedCreateOAuthState.mockReturnValue("nonce-123");
+    mockedBuildGoogleDriveAuthorizationUrl.mockReturnValue(
+      "https://accounts.google.com/o/oauth2/v2/auth?state=nonce-123"
+    );
+
+    const response = await GET(new Request("http://localhost/api/businesses/business-1/drive/connect"), {
+      params: Promise.resolve({ businessId: "business-1" })
+    });
+
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
       "https://accounts.google.com/o/oauth2/v2/auth?state=nonce-123"
