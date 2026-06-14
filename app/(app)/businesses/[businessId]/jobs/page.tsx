@@ -58,6 +58,7 @@ export default async function BusinessJobsPage({
           details.membership.role === "owner_admin" ||
           details.membership.role === "reviewer"
         }
+        initialDriveConnected={details.business.drive_root_folder_id !== null}
         categories={categories}
         jobs={jobsResult.jobs}
       />
