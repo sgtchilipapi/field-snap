@@ -3,7 +3,6 @@
 import { redirect } from "next/navigation";
 import { createBusiness } from "@/lib/server/services/business-service";
 import { requireSession } from "@/lib/server/auth/session";
-import { getBusinessLandingPath } from "@/lib/server/services/business-service";
 
 export type NewBusinessFormState = {
   error: string | null;
@@ -30,11 +29,5 @@ export async function submitNewBusiness(
     };
   }
 
-  redirect(
-    getBusinessLandingPath({
-      id: business.id,
-      role: "owner_admin",
-      driveConnected: false
-    })
-  );
+  redirect(`/api/businesses/${business.id}/drive/connect`);
 }

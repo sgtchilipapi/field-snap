@@ -1,5 +1,6 @@
 "use client";
 
+import type { FormEvent } from "react";
 import { useActionState } from "react";
 import { submitNewBusiness, type NewBusinessFormState } from "@/app/(app)/businesses/new/actions";
 import { InlineAlert } from "@/components/ui/inline-alert";
@@ -17,6 +18,18 @@ export function NewBusinessForm({
   const [state, formAction, pending] = useActionState(submitNewBusiness, initialState);
   const isSheetVariant = variant === "sheet";
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    const formData = new FormData(event.currentTarget);
+    const businessName = String(formData.get("name") ?? "").trim();
+    const confirmed = window.confirm(
+      `This will create a folder on your google drive named ${businessName || "<Business Name>"}.`
+    );
+
+    if (!confirmed) {
+      event.preventDefault();
+    }
+  }
+
   return (
     <form
       action={formAction}
@@ -26,6 +39,7 @@ export function NewBusinessForm({
           ? ""
           : "rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-6"
       )}
+      onSubmit={handleSubmit}
     >
       <div className="space-y-0">
         {/* <label className="text-sm font-medium" htmlFor="business-name">
