@@ -13,7 +13,7 @@ function forbidden() {
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 }
 
-export async function POST(
+async function initiateDriveConnect(
   request: Request,
   context: { params: Promise<{ businessId: string }> }
 ) {
@@ -60,4 +60,18 @@ export async function POST(
       loginHint: user.email
     })
   );
+}
+
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ businessId: string }> }
+) {
+  return initiateDriveConnect(request, context);
+}
+
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ businessId: string }> }
+) {
+  return initiateDriveConnect(request, context);
 }

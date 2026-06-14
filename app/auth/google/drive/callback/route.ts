@@ -11,13 +11,15 @@ import { connectBusinessDriveFromCode } from "@/lib/server/services/drive-servic
 import { ensureBusinessFolderTemplate } from "@/lib/server/services/folder-template-service";
 
 function redirectAfterDriveCallback(businessId: string | null | undefined, errorCode?: string) {
-  const pathname = businessId ? `/businesses/${businessId}/settings` : "/businesses";
+  const pathname = businessId
+    ? errorCode
+      ? `/businesses/${businessId}/settings`
+      : `/businesses/${businessId}/jobs`
+    : "/businesses";
   const url = new URL(pathname, env.APP_BASE_URL);
 
   if (errorCode) {
     url.searchParams.set("drive_error", errorCode);
-  } else {
-    url.searchParams.set("drive", "connected");
   }
 
   return NextResponse.redirect(url);
