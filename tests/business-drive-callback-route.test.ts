@@ -63,7 +63,7 @@ describe("/auth/google/drive/callback", () => {
     expect(mockedEnsureBusinessFolderTemplate).toHaveBeenCalledWith("business-1");
     expect(mockedClearDriveOAuthState).toHaveBeenCalled();
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toContain("/businesses/business-1/settings?drive=connected");
+    expect(response.headers.get("location")).toContain("/businesses/business-1/jobs");
   });
 
   it("rejects callback state mismatches", async () => {
