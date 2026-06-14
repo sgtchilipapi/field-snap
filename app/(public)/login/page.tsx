@@ -54,11 +54,11 @@ export default async function LoginPage({
         <p className="text-sm uppercase tracking-[0.32em] text-[color:var(--muted)]">
           Fylerr
         </p>
-        <h1 className="mt-4 max-w-xl text-3xl italic font-semibold tracking-tight">
-          Faster sign-off, cleaner payout.
+        <h1 className="mt-4 max-w-xl text-4xl italic font-semibold tracking-tight">
+          Don't waste your precious time on paperworks.
         </h1>
         <p className="mt-3 text-1xl font-semibold text-[color:var(--muted)]">
-          Admin works done for you so you can focus on profit-earning work.
+          Fylerr does the documentation for you so you can focus on value-producing work.
         </p>
       </section>
 
@@ -75,13 +75,13 @@ export default async function LoginPage({
               description={alert.description}
             />
           ) : null}
-          {wasLoggedOut ? (
+          {/* {wasLoggedOut ? (
             <InlineAlert
               title="Signed out"
               variant="success"
               description="Your Fylerr session has been cleared."
             />
-          ) : null}
+          ) : null} */}
         </div>
       </section>
     </>
