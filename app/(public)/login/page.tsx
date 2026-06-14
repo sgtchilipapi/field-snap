@@ -7,28 +7,32 @@ import { getPostLoginRedirectForUser } from "@/lib/server/services/auth-service"
 const alertByError = {
   access_denied: {
     title: "Access denied",
-    description: "Google sign-in was cancelled or Fylerr did not receive approved access.",
-    variant: "danger" as const
+    description:
+      "Google sign-in was cancelled or Fylerr did not receive approved access.",
+    variant: "danger" as const,
   },
   email_not_verified: {
     title: "Access denied",
-    description: "Fylerr requires a verified Google email address before sign-in can continue.",
-    variant: "danger" as const
+    description:
+      "Fylerr requires a verified Google email address before sign-in can continue.",
+    variant: "danger" as const,
   },
   callback_failed: {
     title: "Callback failed",
-    description: "Fylerr could not complete the Google callback. Check OAuth configuration and try again.",
-    variant: "danger" as const
+    description:
+      "Fylerr could not complete the Google callback. Check OAuth configuration and try again.",
+    variant: "danger" as const,
   },
   unexpected: {
     title: "Unexpected sign-in error",
-    description: "An unexpected provider error interrupted sign-in. Try again after confirming the OAuth setup.",
-    variant: "danger" as const
-  }
+    description:
+      "An unexpected provider error interrupted sign-in. Try again after confirming the OAuth setup.",
+    variant: "danger" as const,
+  },
 };
 
 export default async function LoginPage({
-  searchParams
+  searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
@@ -41,12 +45,16 @@ export default async function LoginPage({
   const resolvedSearchParams = (await searchParams) ?? {};
   const errorParam = resolvedSearchParams.error;
   const errorCode = Array.isArray(errorParam) ? errorParam[0] : errorParam;
-  const alert = errorCode ? alertByError[errorCode as keyof typeof alertByError] : null;
-  const loggedOutParam = resolvedSearchParams.logged_out;
-  const wasLoggedOut = Array.isArray(loggedOutParam) ? loggedOutParam[0] === "1" : loggedOutParam === "1";
+  const alert = errorCode
+    ? alertByError[errorCode as keyof typeof alertByError]
+    : null;
   const nextParam = resolvedSearchParams.next;
-  const nextPath = normalizeReturnPath(Array.isArray(nextParam) ? nextParam[0] : nextParam);
-  const loginHref = nextPath ? `/auth/google?next=${encodeURIComponent(nextPath)}` : "/auth/google";
+  const nextPath = normalizeReturnPath(
+    Array.isArray(nextParam) ? nextParam[0] : nextParam,
+  );
+  const loginHref = nextPath
+    ? `/auth/google?next=${encodeURIComponent(nextPath)}`
+    : "/auth/google";
 
   return (
     <>
@@ -54,11 +62,12 @@ export default async function LoginPage({
         <p className="text-sm uppercase tracking-[0.32em] text-[color:var(--muted)]">
           Fylerr
         </p>
-        <h1 className="mt-4 max-w-xl text-4xl italic font-semibold tracking-tight">
-          Don't waste your precious time on paperworks.
+        <h1 className="mt-4 max-w-xl text-4xl font-semibold italic tracking-tight">
+          Don&apos;t waste your precious time on paperwork.
         </h1>
-        <p className="mt-3 text-1xl font-semibold text-[color:var(--muted)]">
-          Fylerr does the documentation for you so you can focus on value-producing work.
+        <p className="text-1xl mt-3 font-semibold text-[color:var(--muted)]">
+          Fylerr does the documentation for you so you can focus on
+          value-producing work.
         </p>
       </section>
 
