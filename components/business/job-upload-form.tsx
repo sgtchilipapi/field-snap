@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { UploadQueueList } from "@/components/upload-queue/upload-queue-list";
+import { useUploadQueue } from "@/lib/upload-queue/use-upload-queue";
 
 type UploadMethod = "snap" | "upload";
 type FailureDialogAction = "connect" | "retry";
@@ -155,6 +157,11 @@ export function JobUploadForm({
   const driveStatusPollRef = useRef<number | null>(null);
   const isFailureDialogOpen = failureDialog !== null;
   const isAnyDialogOpen = showSuccessDialog || isFailureDialogOpen;
+  const uploadQueue = useUploadQueue({
+    businessId,
+    jobId,
+    captureContext: "job",
+  });
 
   useEffect(() => {
     if (autoOpenSnap) {
@@ -357,8 +364,6 @@ export function JobUploadForm({
       return;
     }
 
-    const formData = new FormData();
-    formData.set("file", file);
     clearDriveConnectFlow({ closeWindow: true });
     setSuccessMessage(null);
     setFailureDialog(null);
@@ -369,52 +374,20 @@ export function JobUploadForm({
     setIsConnectingDrive(false);
 
     try {
-      const driveStatusResponse = await fetch(
-        `/api/businesses/${businessId}/drive/status`,
-        {
-          cache: "no-store",
-        },
+      await uploadQueue.enqueue({
+        businessId,
+        jobId,
+        captureContext: "job",
+        endpointPath: `/api/businesses/${businessId}/jobs/${jobId}/documents/upload`,
+        file,
+      });
+      setSuccessMessage(
+        "Your photo is queued. Keep Fylerr open and it will upload to Google Drive automatically.",
       );
-      const driveStatus = (await driveStatusResponse
-        .json()
-        .catch(() => null)) as {
-        connected?: boolean;
-      } | null;
-
-      if (!driveStatusResponse.ok || !driveStatus?.connected) {
-        openFailureDialog(
-          "An active Google Drive connection is required.",
-          method,
-          file,
-        );
-        return;
-      }
+      setShowSuccessDialog(true);
     } catch (error) {
       openFailureDialog(normalizeUploadErrorMessage(error), method, file);
-      return;
     }
-
-    setSuccessMessage(
-      "Your photo is being uploaded in the background. You can keep working while Fylerr sends it to Google Drive.",
-    );
-    setShowSuccessDialog(true);
-
-    fetch(`/api/businesses/${businessId}/jobs/${jobId}/documents/upload`, {
-      method: "POST",
-      body: formData,
-    })
-      .then(async (response) => {
-        const payload = (await response.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-
-        if (!response.ok) {
-          throw new Error(payload?.error ?? "Upload failed.");
-        }
-      })
-      .catch((error) => {
-        console.error("Background document upload failed", error);
-      });
   }
 
   function onFileChange(
@@ -482,6 +455,13 @@ export function JobUploadForm({
         className="sr-only"
         onChange={(event) => onFileChange("upload", event)}
         type="file"
+      />
+
+      <UploadQueueList
+        items={uploadQueue.items}
+        onRemove={(id) => void uploadQueue.remove(id)}
+        onRetry={(id) => void uploadQueue.retry(id)}
+        storageError={uploadQueue.storageError}
       />
 
       {failureDialog ? (
