@@ -16,8 +16,11 @@
   --success: #356b4c;
   --danger: #9f3f32;
   --shadow-shell: 0 24px 80px rgba(18, 36, 58, 0.12);
+  --shadow-soft: 0 14px 44px rgba(18, 36, 58, 0.1);
+  --radius-card: 1.25rem;
+  --radius-panel: 1rem;
   --top-bar-height: 2rem;
-  --bottom-nav-offset: calc(6.5rem + env(safe-area-inset-bottom));
+  --bottom-nav-offset: calc(5.85rem + env(safe-area-inset-bottom));
 }
 
 * {
@@ -26,6 +29,7 @@
 
 html {
   min-height: 100%;
+  scroll-padding-bottom: var(--bottom-nav-offset);
   background:
     radial-gradient(circle at top left, rgba(213, 111, 62, 0.18), transparent 30%),
     radial-gradient(circle at top right, rgba(207, 228, 241, 0.9), transparent 35%),
@@ -93,14 +97,18 @@ main {
 
 @layer utilities {
   .surface-card {
-    @apply rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[var(--shadow-shell)] backdrop-blur;
+    @apply rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--surface)] p-4 shadow-[var(--shadow-soft)] backdrop-blur md:p-5;
   }
 
   .surface-panel {
-    @apply rounded-[1.25rem] border border-[color:var(--border)] bg-[color:var(--surface-muted)];
+    @apply rounded-[var(--radius-panel)] border border-[color:var(--border)] bg-[color:var(--surface-muted)] p-4;
   }
 
   .mobile-page-grid {
-    @apply grid gap-5 md:gap-6;
+    @apply grid gap-4 md:gap-5;
+  }
+
+  .mobile-section {
+    @apply rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--surface)] p-4 shadow-[var(--shadow-soft)] backdrop-blur md:p-5;
   }
 }

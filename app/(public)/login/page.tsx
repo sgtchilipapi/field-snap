@@ -55,7 +55,7 @@ export default async function LoginPage({
           Fylerr
         </p>
         <h1 className="mt-4 max-w-xl text-4xl italic font-semibold tracking-tight">
-          Don't waste your precious time on paperworks.
+          Don&apos;t waste your precious time on paperworks.
         </h1>
         <p className="mt-3 text-1xl font-semibold text-[color:var(--muted)]">
           Fylerr does the documentation for you so you can focus on value-producing work.
@@ -75,13 +75,13 @@ export default async function LoginPage({
               description={alert.description}
             />
           ) : null}
-          {/* {wasLoggedOut ? (
+          {wasLoggedOut ? (
             <InlineAlert
               title="Signed out"
               variant="success"
               description="Your Fylerr session has been cleared."
             />
-          ) : null} */}
+          ) : null}
         </div>
       </section>
     </>
