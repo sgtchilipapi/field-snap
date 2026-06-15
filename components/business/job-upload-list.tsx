@@ -4,8 +4,10 @@ import { useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { retryJobDocumentAction } from "@/app/(app)/businesses/[businessId]/jobs/[jobId]/actions";
+import { UploadQueueList } from "@/components/upload-queue/upload-queue-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { DocumentListItemRow } from "@/lib/server/data/documents";
+import { useUploadQueue } from "@/lib/upload-queue/use-upload-queue";
 
 type UploadState = "Success" | "Failed" | "Pending";
 
@@ -56,16 +58,25 @@ function getStatusClass(state: UploadState) {
 
 export function JobUploadList({
   businessId,
+  canManageDrive = false,
   jobId,
   documents,
 }: {
   businessId: string;
+  canManageDrive?: boolean;
   jobId: string;
   documents: DocumentListItemRow[];
 }) {
   const [previewDocument, setPreviewDocument] =
     useState<DocumentListItemRow | null>(null);
   const [isPending, startTransition] = useTransition();
+  const uploadQueue = useUploadQueue({
+    businessId,
+    jobId,
+    captureContext: "job",
+  });
+  const hasPendingLocalUploads =
+    Boolean(uploadQueue.storageError) || uploadQueue.items.length > 0;
 
   return (
     <section className="space-y-4 rounded-[1.5rem] bg-[color:var(--surface)] p-5">
@@ -76,12 +87,14 @@ export function JobUploadList({
         </p>
       </div>
 
-      {documents.length === 0 ? (
+      {documents.length === 0 && !hasPendingLocalUploads ? (
         <EmptyState
           title="No uploads yet"
           description="Photos and documents uploaded for this job will appear here."
         />
-      ) : (
+      ) : null}
+
+      {documents.length > 0 ? (
         <div className="divide-y divide-[color:var(--border)] overflow-hidden rounded-[1.25rem] border border-[color:var(--border)] bg-white">
           {documents.map((document) => {
             const state = getUploadState(document.status);
@@ -161,7 +174,19 @@ export function JobUploadList({
             );
           })}
         </div>
-      )}
+      ) : null}
+
+      {hasPendingLocalUploads ? (
+        <UploadQueueList
+          businessId={businessId}
+          canManageDrive={canManageDrive}
+          items={uploadQueue.items}
+          mergeWithUploadsSection
+          onRemove={(id) => void uploadQueue.remove(id)}
+          onRetry={(id) => void uploadQueue.retry(id)}
+          storageError={uploadQueue.storageError}
+        />
+      ) : null}
 
       {previewDocument ? (
         <div
