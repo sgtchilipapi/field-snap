@@ -1,6 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import type { UploadQueueViewItem } from "@/lib/upload-queue/types";
+
+function isDriveConnectionError(message?: string) {
+  const normalizedMessage = message?.toLowerCase() ?? "";
+
+  return (
+    normalizedMessage.includes("active google drive connection") ||
+    normalizedMessage.includes("google drive needs to be reconnected")
+  );
+}
 
 function getStatusLabel(status: UploadQueueViewItem["status"]) {
   if (status === "queued") {
@@ -47,12 +57,18 @@ function formatFileSize(bytes: number) {
 }
 
 export function UploadQueueList({
+  businessId,
+  canManageDrive = false,
   items,
+  mergeWithUploadsSection = false,
   storageError,
   onRetry,
   onRemove,
 }: {
+  businessId?: string;
+  canManageDrive?: boolean;
   items: UploadQueueViewItem[];
+  mergeWithUploadsSection?: boolean;
   storageError?: string | null;
   onRetry: (id: string) => void;
   onRemove: (id: string) => void;
@@ -61,17 +77,19 @@ export function UploadQueueList({
     return null;
   }
 
-  return (
-    <section className="space-y-3 rounded-[1.5rem] border border-[color:var(--border)] bg-white p-4">
-      <div>
-        <h3 className="text-sm font-semibold text-[color:var(--foreground)]">
-          Upload queue
-        </h3>
-        <p className="text-xs text-[color:var(--muted)]">
-          Files are saved locally until Fylerr sends them to Google Drive while
-          this app is open.
-        </p>
-      </div>
+  const content = (
+    <>
+      {!mergeWithUploadsSection ? (
+        <div>
+          <h3 className="text-sm font-semibold text-[color:var(--foreground)]">
+            Upload queue
+          </h3>
+          <p className="text-xs text-[color:var(--muted)]">
+            Files are saved locally until Fylerr sends them to Google Drive
+            while this app is open.
+          </p>
+        </div>
+      ) : null}
 
       {storageError ? (
         <div className="rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -79,52 +97,84 @@ export function UploadQueueList({
         </div>
       ) : null}
 
-      {items.map((item) => (
-        <div
-          className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-3"
-          key={item.id}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-[color:var(--foreground)]">
-                {item.originalFilename}
-              </p>
-              <p className="text-xs text-[color:var(--muted)]">
-                {formatFileSize(item.fileSizeBytes)} · Attempt{" "}
-                {item.attemptCount + 1}
-              </p>
+      {items.map((item) => {
+        const hasDriveConnectionError = isDriveConnectionError(item.lastError);
+
+        return (
+          <div
+            className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-3"
+            key={item.id}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-[color:var(--foreground)]">
+                  {item.originalFilename}
+                </p>
+                <p className="text-xs text-[color:var(--muted)]">
+                  {formatFileSize(item.fileSizeBytes)} · Attempt{" "}
+                  {item.attemptCount + 1}
+                </p>
+              </div>
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${getStatusClassName(item.status)}`}
+              >
+                {getStatusLabel(item.status)}
+              </span>
             </div>
-            <span
-              className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${getStatusClassName(item.status)}`}
-            >
-              {getStatusLabel(item.status)}
-            </span>
+
+            {item.lastError ? (
+              <p className="mt-2 text-sm text-red-700">{item.lastError}</p>
+            ) : null}
+
+            {item.status === "failed" || item.status === "blocked" ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {hasDriveConnectionError ? (
+                  canManageDrive && businessId ? (
+                    <Link
+                      className="rounded-full bg-[color:var(--foreground)] px-3 py-1.5 text-xs font-medium text-white"
+                      href={`/businesses/${businessId}/settings`}
+                    >
+                      Connect
+                    </Link>
+                  ) : (
+                    <button
+                      className="rounded-full bg-[color:var(--foreground)] px-3 py-1.5 text-xs font-medium text-white"
+                      type="button"
+                    >
+                      Request Connection
+                    </button>
+                  )
+                ) : (
+                  <button
+                    className="rounded-full bg-[color:var(--foreground)] px-3 py-1.5 text-xs font-medium text-white"
+                    onClick={() => onRetry(item.id)}
+                    type="button"
+                  >
+                    Try again
+                  </button>
+                )}
+                <button
+                  className="rounded-full border border-[color:var(--border)] bg-white px-3 py-1.5 text-xs font-medium text-[color:var(--foreground)]"
+                  onClick={() => onRemove(item.id)}
+                  type="button"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : null}
           </div>
+        );
+      })}
+    </>
+  );
 
-          {item.lastError ? (
-            <p className="mt-2 text-sm text-red-700">{item.lastError}</p>
-          ) : null}
+  if (mergeWithUploadsSection) {
+    return <div className="space-y-3">{content}</div>;
+  }
 
-          {item.status === "failed" || item.status === "blocked" ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                className="rounded-full bg-[color:var(--foreground)] px-3 py-1.5 text-xs font-medium text-white"
-                onClick={() => onRetry(item.id)}
-                type="button"
-              >
-                Try again
-              </button>
-              <button
-                className="rounded-full border border-[color:var(--border)] bg-white px-3 py-1.5 text-xs font-medium text-[color:var(--foreground)]"
-                onClick={() => onRemove(item.id)}
-                type="button"
-              >
-                Remove
-              </button>
-            </div>
-          ) : null}
-        </div>
-      ))}
+  return (
+    <section className="space-y-3 rounded-[1.5rem] border border-[color:var(--border)] bg-white p-4">
+      {content}
     </section>
   );
 }

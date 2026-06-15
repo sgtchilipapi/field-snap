@@ -104,6 +104,7 @@ export default async function JobDetailsPage({
       </div>
       <JobUploadList
         businessId={businessId}
+        canManageDrive={canManageJob}
         documents={documents}
         jobId={jobId}
       />

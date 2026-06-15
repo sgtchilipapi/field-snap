@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { UploadQueueList } from "@/components/upload-queue/upload-queue-list";
 import { useUploadQueue } from "@/lib/upload-queue/use-upload-queue";
 
 type UploadMethod = "snap" | "upload";
@@ -455,13 +454,6 @@ export function JobUploadForm({
         className="sr-only"
         onChange={(event) => onFileChange("upload", event)}
         type="file"
-      />
-
-      <UploadQueueList
-        items={uploadQueue.items}
-        onRemove={(id) => void uploadQueue.remove(id)}
-        onRetry={(id) => void uploadQueue.retry(id)}
-        storageError={uploadQueue.storageError}
       />
 
       {failureDialog ? (

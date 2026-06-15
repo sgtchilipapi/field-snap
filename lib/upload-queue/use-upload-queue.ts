@@ -14,6 +14,12 @@ import type {
   UploadQueueViewItem,
 } from "./types";
 
+const uploadQueueChangedEventName = "fylerr-upload-queue-changed";
+
+function notifyUploadQueueChanged() {
+  window.dispatchEvent(new Event(uploadQueueChangedEventName));
+}
+
 function toViewItem(
   item: Awaited<ReturnType<typeof listUploads>>[number],
 ): UploadQueueViewItem {
@@ -70,6 +76,7 @@ export function useUploadQueue(filter: UploadQueueFilter) {
   const enqueue = useCallback(
     async (input: EnqueueUploadInput) => {
       const item = await enqueueUpload(input);
+      notifyUploadQueueChanged();
       await refresh();
       void run();
       return item;
@@ -84,6 +91,7 @@ export function useUploadQueue(filter: UploadQueueFilter) {
         nextAttemptAt: undefined,
         lastError: undefined,
       });
+      notifyUploadQueueChanged();
       await refresh();
       void run();
     },
@@ -93,6 +101,7 @@ export function useUploadQueue(filter: UploadQueueFilter) {
   const remove = useCallback(
     async (id: string) => {
       await deleteUpload(id);
+      notifyUploadQueueChanged();
       await refresh();
     },
     [refresh],
@@ -103,6 +112,7 @@ export function useUploadQueue(filter: UploadQueueFilter) {
     void run();
 
     const onOnline = () => void run();
+    const onQueueChanged = () => void refresh();
     const onVisible = () => {
       if (document.visibilityState === "visible") {
         void run();
@@ -111,11 +121,13 @@ export function useUploadQueue(filter: UploadQueueFilter) {
     const intervalId = window.setInterval(() => void run(), 10_000);
 
     window.addEventListener("online", onOnline);
+    window.addEventListener(uploadQueueChangedEventName, onQueueChanged);
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       window.clearInterval(intervalId);
       window.removeEventListener("online", onOnline);
+      window.removeEventListener(uploadQueueChangedEventName, onQueueChanged);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [refresh, run]);
